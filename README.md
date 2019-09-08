@@ -1,2 +1,2 @@
 # csOSShell
-Terminal logic project (current class)
+Terminal logic project (Class in Progress, Operating Systems)
