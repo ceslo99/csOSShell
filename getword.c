@@ -50,13 +50,60 @@ int getword(char *w){
         *w = '\0';
         return -1;
     }
+    //* added new *//
 
-    //stores character to pointer
-    *w = characterValue;
-    //moves pointer ahead one
-    *w++;
-    //increments letterCounter by one
-    letterCounter++;
+    if(characterValue == '<' || characterValue == '|' || characterValue == '#' || characterValue == '&' ){
+        // Word is found, terminate with end of string
+        *w = characterValue;
+        *w++;
+        letterCounter++;
+        *w = '\0';
+        return letterCounter;
+    }
+
+    if( characterValue == '>' ){
+        *w = characterValue;
+        *w++;
+        letterCounter++;
+        characterValue = getchar();
+        if(characterValue == '&'){
+            *w = characterValue;
+            *w++;
+            letterCounter++;
+            *w = '\0';
+            return letterCounter;
+        }
+        else if(characterValue == '>'){
+            *w = characterValue;
+            *w++;
+            letterCounter++;
+            characterValue = getchar();
+            if(characterValue == '&'){
+                *w = characterValue;
+                *w++;
+                letterCounter++;
+                *w = '\0';
+                return letterCounter;
+            }
+        }
+
+        *w = '\0';
+        ungetc(characterValue, stdin);
+        return letterCounter;
+
+    }
+
+    if(characterValue == '\\'){
+        characterValue = getchar();
+    }
+
+        //stores character to pointer
+        *w = characterValue;
+        //moves pointer ahead one
+        *w++;
+        //increments letterCounter by one
+        letterCounter++;
+
 
     while( (characterValue = getchar()) != EOF ){
 
@@ -68,6 +115,25 @@ int getword(char *w){
             if( strcmp(p, "done") == 0){
                 return -1;
             }
+            return letterCounter;
+        }
+
+        //* added new *//
+
+        if(characterValue == '<' || characterValue == '|' || characterValue == '#' || characterValue == '&' ){
+            // Word is found, terminate with end of string
+            *w = '\0';
+            //need to add 'back metacharacters' to be detected
+            ungetc(characterValue, stdin);
+            return letterCounter;
+        }
+
+        if(characterValue == '>' ){
+            // Word is found, terminate with end of string
+            *w = '\0';
+
+            //need to add '>' to be detected
+            ungetc('>', stdin);
             return letterCounter;
         }
 
@@ -84,17 +150,36 @@ int getword(char *w){
             return letterCounter;
         }
 
-        //stores character to pointer
-        *w = characterValue;
-        //moves pointer ahead one
-        *w++;
-        //increments letterCounter by one
-        letterCounter++;
+        if(characterValue == '\\'){
+            characterValue = getchar();
+        }
+
+        if( characterValue != '\n'){
+            //stores character to pointer
+            *w = characterValue;
+            //moves pointer ahead one
+            *w++;
+            //increments letterCounter by one
+            letterCounter++;
+
+
+       }
+        else{
+            ungetc('\n', stdin);
+        }
+
+        if(letterCounter >= 254){
+            return letterCounter;
+        }
+
     }
 
+    *w = '\0';
+    if( strcmp(p, "done") == 0){
+        return -1;
+    }
     // Check for left over word
     if(letterCounter != 0){
-        *w = '\0';
         return letterCounter;
     }
 
