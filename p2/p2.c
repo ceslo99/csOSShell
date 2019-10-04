@@ -27,7 +27,7 @@ char *onePreviousnewargv[MAXITEM];
 
 char *outputPointer; // Pointer to beginning of file '>'
 char *inputPointer; // Pointer to beginning of file '<'
-int *outputPointerAnd; // pointer to beggining of file of '>&'
+char *outputPointerAnd; // pointer to beggining of file of '>&'
 //char *cd; // *DELETE* Just used to print current directory
 //char cwd[1024]; // *DELETE* Just need to print current directory
 int doneFlag =0;
@@ -35,17 +35,17 @@ int greaterThanFlag = 0;
 int lessThanFlag = 0;
 int diagnosticFlag = 0;
 int greaterThanAndFlag = 0;
-
+int bangFlag = 0;
 int child = 0;
 int pid = 0 ;
 
 int file;
 
-
 int main(int argc, char *argv[] )
 {
 
     int flags = 0;
+    int mode = 0;
     int outFile = 0;
     int inFile = 0;
     int backgroundFlag = 0;
@@ -72,7 +72,6 @@ int main(int argc, char *argv[] )
         doneFlag = 0;
         backgroundFlag = 0;
         printf("%%1%% "); // For user prompt
-
         //fflush(stdin);
         wordCount = parse(); // Parse will add each word into myargv to have access to it
 
@@ -81,13 +80,10 @@ int main(int argc, char *argv[] )
 //        printf("Current working dir: %s\n", cwd);
 //        printf("--------------------\n");
 
-if(strcmp(newargv[0],"!!") == 0){
-    dup2("oneprev.txt",STDIN_FILENO);
-    continue;
-}
-else{
-    int k = 0;
-    int hit =0;
+
+
+        int k = 0;
+        int hit =0;
         while(hit != wordCount){
             if(myargv[k] == '\0'){
                 hit++;
@@ -99,25 +95,6 @@ else{
 
             k++;
         }
-    fprintf(fp, "%s ");
-        oldsize = wordCount;
-}
-
-
-//        int k = 0;
-//        int hit =0;
-//        while(hit != wordCount){
-//            if(myargv[k] == '\0'){
-//                hit++;
-//                onePreviousargv[k] = '\0';
-//            }
-//            else{
-//                onePreviousargv[k] = myargv[k];
-//            }
-//
-//            k++;
-//        }
-//        oldsize = wordCount;
 
         if (wordCount == -1 || doneFlag) { // Done is seen in myargv first position then quit program
             break;
@@ -136,11 +113,12 @@ else{
         /////////////////// check '>' ///////////////////////
         if(greaterThanFlag == 1){
             flags = O_CREAT | O_EXCL | O_RDWR ;
+            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(outputPointer == NULL){
                 fprintf(stderr,"No file name to create.\n");
                 continue;
             }
-            if( (outFile = open(outputPointer,flags,S_IRWXU) ) < 0 ){
+            if( (outFile = open(outputPointer,flags,mode) ) < 0 ){
                 fprintf(stderr,"%s: File already exists.\n",outputPointer);
                 continue;
             }
@@ -148,11 +126,12 @@ else{
         /////////////////// check '<' ///////////////////////
         if(lessThanFlag == 1){
             flags = O_CREAT | O_EXCL | O_RDWR ;
+            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(inputPointer == NULL){
                 fprintf(stderr,"No file name to create.\n");
                 continue;
             }
-            if( (inFile = open(outputPointer,flags,S_IRWXU) ) < 0 ){
+            if( (inFile = open(outputPointer,flags,mode) ) < 0 ){
                 fprintf(stderr,"%s: File already exists.\n",outputPointer);
                 continue;
             }
@@ -160,11 +139,12 @@ else{
         //////////////////// check '>&' ///////////////////////
         if(greaterThanAndFlag == 1){
             flags = O_CREAT | O_EXCL | O_RDWR ;
+            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(outputPointerAnd == NULL){
                 fprintf(stderr,"No file name to create.\n");
                 continue;
             }
-            if( (outFile = open(outputPointer,flags,S_IRWXU) ) < 0 ){
+            if( (outFile = open(outputPointer,flags,mode) ) < 0 ){
                 fprintf(stderr,"%s: File already exists.\n",outputPointer);
                 continue;
             }
@@ -172,6 +152,7 @@ else{
 
         if( strcmp(newargv[wordCount-1],"&")  == 0){
             backgroundFlag++;
+            wordCount--;
         }
         /*
          * Checks for all possible cases of CD
@@ -227,7 +208,7 @@ else{
 
 
             ///////////// ">" code/////////////
-            if(greaterThanFlag != 0){
+            if(greaterThanFlag != 0 && diagnosticFlag == 0){
                 dup2(outFile,STDOUT_FILENO);
                 close(outFile);
             }
@@ -236,6 +217,11 @@ else{
             if(lessThanFlag != 0){
                 dup2(inFile,STDIN_FILENO);
                 close(inFile);
+            }
+            if(diagnosticFlag != 0){
+                dup2(outFile,STDOUT_FILENO);
+                dup2(outFile,STDOUT_FILENO);
+                close(outFile);
             }
 
             if((execvp(*newargv, newargv)) < 0){ // this executes the command
@@ -248,7 +234,7 @@ else{
             exit(1);
         }
 
-        if(backgroundFlag !=0){	//when & you will place in background and set STDIN to /dev/null
+        if(backgroundFlag !=0){ //when & you will place in background and set STDIN to /dev/null
             printf("%s [%d]\n", *newargv , child);
             backgroundFlag = 0;
             continue;
@@ -283,6 +269,11 @@ int parse(){
     // While loop will keep getting word until there is none left, returns 0
     while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
 
+
+        if(bangFlag != 0){
+            fflush(stdin);
+            continue;
+        }
         if(c == -1 && size == 0){ // Done returns -1 and check if that is the first word
 
             doneFlag = 1;
@@ -294,25 +285,24 @@ int parse(){
             c = 4;
         }
 
-//        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
-//            //strncpy(myargv, onePreviousargv, MAXITEM);
-//
-//            int k = 0;
-//            int hit =0;
-//            while(hit != oldsize){
-//
-//                if(onePreviousargv[k] == '\0'){
-//                    hit++;
-//                    myargv[k] = '\0';
-//                }
-//                else{
-//                    myargv[k] = onePreviousargv[k];
-//                }
-//
-//                k++;
-//            }
-//            return oldsize;
-//        }
+        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
+            //strncpy(myargv, onePreviousargv, MAXITEM);
+            bangFlag++;
+            int k = 0;
+            int hit =0;
+            while(hit != oldsize){
+                if(onePreviousargv[k] == '\0'){
+                    hit++;
+                    myargv[k] = '\0';
+                }
+                else{
+                    myargv[k] = onePreviousargv[k];
+                }
+
+                k++;
+            }
+            return oldsize;
+        }
         else if(c == -1){
 
             break;
@@ -325,22 +315,25 @@ int parse(){
         if(c == 1 && myargv[argvpointerPosition] == '>' ){
             greaterThanFlag++;
             outputPointer = myargv + argvpointerPosition + 2;
+
         }
         else if(c == 1 && myargv[argvpointerPosition] == '<'){
             lessThanFlag++;
             inputPointer = myargv + argvpointerPosition + 2;
 
         }
-//        else if(c == 2 && strcmp(&myargv[argvpointerPosition], ">&") == 0 ){
-//            greaterThanAndFlag++;
-//            outputPointerAnd = myargv + argvpointerPosition + 3;
-//
-//        }
-        // Will skip this round if above statement is true
-        // Points word of myargv into newargv. Adds end of string in myargv of position plus c.
-        // myargv will put next word after null terminal
-        // arvpointer is c plus 1
-        // Increment size of words counted
+
+        else if(c == 2 && strcmp(&myargv[argvpointerPosition], ">&") == 0 ){
+            diagnosticFlag++;
+            greaterThanFlag++;
+            outputPointerAnd = myargv + argvpointerPosition + 3;
+
+        }
+            // Will skip this round if above statement is true
+            // Points word of myargv into newargv. Adds end of string in myargv of position plus c.
+            // myargv will put next word after null terminal
+            // arvpointer is c plus 1
+            // Increment size of words counted
         else{
             newargv[newargvpointerPosition++] = myargv + argvpointerPosition;
             myargv[argvpointerPosition + c] = '\0';
@@ -351,12 +344,13 @@ int parse(){
 
     newargv[newargvpointerPosition] = NULL;
 
+    if(bangFlag != 0){
+        bangFlag = 0;
 
-    //oldsize = size;
+    }
+    oldsize = size;
     return size;
 }
 
 void myhandler(){
 }
-
-
