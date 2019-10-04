@@ -1,8 +1,8 @@
 /*
+ * Cesar Lopez
  * Professor Carroll
  * CS570
  * 10/4/2019
- * Cesar Lopez
  *
  * GraderNotes:
  * I wrote this code myself and has no bugs
@@ -17,7 +17,6 @@
 // Use newargv to save the pointer of each word
 
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
-//int bangFlag = 0;
 int oldsize = -1; // keep track of previous number of words in argv
 
 char myargv[255 * MAXITEM]; // Stores user current input
@@ -28,8 +27,6 @@ char *onePreviousnewargv[MAXITEM];
 char *outputPointer; // Pointer to beginning of file '>'
 char *inputPointer; // Pointer to beginning of file '<'
 char *outputPointerAnd; // pointer to beggining of file of '>&'
-//char *cd; // *DELETE* Just used to print current directory
-//char cwd[1024]; // *DELETE* Just need to print current directory
 int doneFlag =0;
 int greaterThanFlag = 0;
 int lessThanFlag = 0;
@@ -41,6 +38,10 @@ int pid = 0 ;
 
 int file;
 
+/*
+ * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
+ * checks for special conditions and will break when finds done is first word or EOF
+ * */
 int main(int argc, char *argv[] )
 {
 
@@ -72,16 +73,13 @@ int main(int argc, char *argv[] )
         doneFlag = 0;
         backgroundFlag = 0;
         printf("%%1%% "); // For user prompt
-        //fflush(stdin);
         wordCount = parse(); // Parse will add each word into myargv to have access to it
 
-
-//        getcwd(cwd, sizeof(cwd));
-//        printf("Current working dir: %s\n", cwd);
-//        printf("--------------------\n");
-
-
-
+        /*
+         * used to store previous user input as soon as it returns from parse.
+         * since we place '\0' after each word, we use wrod count to find all
+         * we do this since  normally it would stop the loop after it finds the first '\0'
+         * saves every char in onepreviousargv*/
         int k = 0;
         int hit =0;
         while(hit != wordCount){
@@ -104,52 +102,56 @@ int main(int argc, char *argv[] )
             continue;
         }
 
-        /////////////////// check '>' , '<' error ////////////
-        if(greaterThanFlag > 1 || lessThanFlag > 1){
+        //// check '>' , '<' error
+        if(greaterThanFlag > 1 || lessThanFlag > 1){ // if to many directional arguments, error and oontinue
             perror("Too many redirectories.\n");
             continue;
         }
 
-        /////////////////// check '>' ///////////////////////
+
+        //// check '>'
         if(greaterThanFlag == 1){
             flags = O_CREAT | O_EXCL | O_RDWR ;
             mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            if(outputPointer == NULL){
+            if(outputPointer == NULL){ // if there is no file to point then error
                 perror("No file name to create.\n");
                 continue;
             }
-            if( (outFile = open(outputPointer,flags,mode) ) < 0 ){
-                perror("File already exists.\n");
-                continue;
-            }
-        }
-        /////////////////// check '<' ///////////////////////
-        if(lessThanFlag == 1){
-            flags = O_CREAT | O_EXCL | O_RDWR ;
-            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            if(inputPointer == NULL){
-                perror("No file name to create.\n");
-                continue;
-            }
-            if( (inFile = open(outputPointer,flags,mode) ) < 0 ){
-                perror("File already exists.\n");
-                continue;
-            }
-        }
-        //////////////////// check '>&' ///////////////////////
-        if(greaterThanAndFlag == 1){
-            flags = O_CREAT | O_EXCL | O_RDWR ;
-            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            if(outputPointerAnd == NULL){
-                perror("No file name to create.\n");
-                continue;
-            }
-            if( (outFile = open(outputPointer,flags,mode) ) < 0 ){
+            if( (outFile = open(outputPointer,flags,mode) ) < 0 ){ // checks if file doesn't exist
                 perror("File already exists.\n");
                 continue;
             }
         }
 
+        //// check '<'
+        if(lessThanFlag == 1){
+            flags = O_CREAT | O_EXCL | O_RDWR ;
+            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+            if(inputPointer == NULL){ // if there is no file to point then error
+                perror("No file name to create.\n");
+                continue;
+            }
+            if( (inFile = open(outputPointer,flags,mode) ) < 0 ){ // checks if file doesn't exist
+                perror("File already exists.\n");
+                continue;
+            }
+        }
+        //// check '>&'
+        if(greaterThanAndFlag == 1){
+            flags = O_CREAT | O_EXCL | O_RDWR ;
+            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+            if(outputPointerAnd == NULL){ // if there is no file to point then error
+                perror("No file name to create.\n");
+                continue;
+            }
+            if( (outFile = open(outputPointer,flags,mode) ) < 0 ){ // checks if file doesn't exist
+                perror("File already exists.\n");
+                continue;
+            }
+        }
+
+        /* Checks if last char in newargv is '&' to run process in the background.
+         * in order to pass future cases must decrement wordcount and update backgroundFlag*/
         if( strcmp(newargv[wordCount-1],"&")  == 0){
             backgroundFlag++;
             wordCount--;
@@ -159,22 +161,19 @@ int main(int argc, char *argv[] )
          * First checks if user just types cd and takes to home directory
          * Others checks if there is a certain path it wants to go
          * Last checks if to many paths given
+         * if cd is not given then fork!
          * */
         if(strcmp(newargv[0],"cd") == 0  && wordCount == 1){
 
             chdir(getenv("HOME"));
-            //getcwd(cwd, sizeof(cwd));
-            //printf("Current working dir: %s\n", cwd);
         }
         else if(strcmp(newargv[0],"cd") == 0  && wordCount == 2){
             if( chdir(newargv[1]) == -1){
-                perror("No file or folder in current directory.\n");
+                perror("No folder in current directory.\n");
 
             }
             else{
                 chdir(newargv[1]);
-                //getcwd(cwd, sizeof(cwd));
-                //printf("Current working dir: %s\n", cwd);
             }
         }
         else if(strcmp(newargv[0],"cd") == 0  && wordCount > 2){
@@ -182,11 +181,12 @@ int main(int argc, char *argv[] )
 
         }
         else{
-            /////////////////// fork code/////////////////////////
+            //// fork code
             fflush(stdout);
             fflush(stderr);
 
             child = fork();
+
 
             if(child < 0){
                 printf("Can't Fork!");
@@ -206,17 +206,18 @@ int main(int argc, char *argv[] )
                 }
 
 
-                ///////////// ">" code/////////////
+                //// ">" code
                 if(greaterThanFlag != 0 && diagnosticFlag == 0){
                     dup2(outFile,STDOUT_FILENO);
                     close(outFile);
                 }
 
-                //////////// "<" code/////////////
+                //// "<" code
                 if(lessThanFlag != 0){
                     dup2(inFile,STDIN_FILENO);
                     close(inFile);
                 }
+                //// ">&"
                 if(diagnosticFlag != 0){
                     dup2(outFile,STDOUT_FILENO);
                     dup2(outFile,STDOUT_FILENO);
@@ -233,7 +234,8 @@ int main(int argc, char *argv[] )
                 exit(1);
             }
 
-            if(backgroundFlag !=0){ //when & you will place in background and set STDIN to /dev/null
+            // place in background and set STDIN set to/dev/null when & is present
+            if(backgroundFlag !=0){
                 printf("%s [%d]\n", *newargv , child);
                 backgroundFlag = 0;
                 continue;
@@ -248,10 +250,6 @@ int main(int argc, char *argv[] )
             }
         }
 
-
-
-
-
     }
 
     kill(getpgrp(), SIGTERM);
@@ -259,6 +257,11 @@ int main(int argc, char *argv[] )
     exit(0);
 }
 
+
+/*
+ *  calls getword and able to return size of word.
+ *  especial cases if it runs to done, eof, !! and metacharacters
+ */
 int parse(){
 
     int size = 0;
@@ -272,6 +275,7 @@ int parse(){
     // While loop will keep getting word until there is none left, returns 0
     while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
 
+        //if bang bang found then we want to use old newargv so just continue
         if(bangFlag != 0){
             continue;
         }
@@ -282,23 +286,22 @@ int parse(){
             return size;
         }
 
-        else if(c == -1 && strcmp(&myargv[argvpointerPosition], "done" ) == 0){ // Condition if done is in the middle of sentence continue
+        // Condition if done is in the middle of sentence continue
+        else if(c == -1 && strcmp(&myargv[argvpointerPosition], "done" ) == 0){
 
             c = 4;
         }
-
+        //allows to continue future words
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
             bangFlag++;
-
             continue;
         }
-        else if(c == -1){
+
+        else if(c == -1){ // eof found
 
             break;
         }
 
-
-        //////////////////////////////
         // Checks for > sign and only 1 character. Moves pointer two position forward to point to the file name
         // '>''\0' is two character and expect file name after or null
         if(c == 1 && myargv[argvpointerPosition] == '>' ){
@@ -315,7 +318,7 @@ int parse(){
         else if(c == 2 && strcmp(&myargv[argvpointerPosition], ">&") == 0 ){
             diagnosticFlag++;
             greaterThanFlag++;
-            outputPointerAnd = myargv + argvpointerPosition + 3;
+            outputPointer = myargv + argvpointerPosition + 3;
 
         }
             // Will skip this round if above statement is true
@@ -331,6 +334,9 @@ int parse(){
         }
     }
 
+    /*
+     * After is continues any left over words once !! is found then we need to put previous command in myarg
+     * newargv hasnt changed since we continued above and return oldsize*/
     if(bangFlag != 0){
         bangFlag = 0;
         int k = 0;
@@ -352,7 +358,8 @@ int parse(){
     newargv[newargvpointerPosition] = NULL;
 
 
-    oldsize = size;
+
+    oldsize = size; // stores old size before returning
     return size;
 }
 
