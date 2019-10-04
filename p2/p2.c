@@ -106,7 +106,7 @@ int main(int argc, char *argv[] )
 
         /////////////////// check '>' , '<' error ////////////
         if(greaterThanFlag > 1 || lessThanFlag > 1){
-            fprintf(stderr,"Too many redirectories.\n");
+            perror("Too many redirectories.\n");
             continue;
         }
 
@@ -115,11 +115,11 @@ int main(int argc, char *argv[] )
             flags = O_CREAT | O_EXCL | O_RDWR ;
             mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(outputPointer == NULL){
-                fprintf(stderr,"No file name to create.\n");
+                perror("No file name to create.\n");
                 continue;
             }
             if( (outFile = open(outputPointer,flags,mode) ) < 0 ){
-                fprintf(stderr,"%s: File already exists.\n",outputPointer);
+                perror("File already exists.\n");
                 continue;
             }
         }
@@ -128,11 +128,11 @@ int main(int argc, char *argv[] )
             flags = O_CREAT | O_EXCL | O_RDWR ;
             mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(inputPointer == NULL){
-                fprintf(stderr,"No file name to create.\n");
+                perror("No file name to create.\n");
                 continue;
             }
             if( (inFile = open(outputPointer,flags,mode) ) < 0 ){
-                fprintf(stderr,"%s: File already exists.\n",outputPointer);
+                perror("File already exists.\n");
                 continue;
             }
         }
@@ -141,11 +141,11 @@ int main(int argc, char *argv[] )
             flags = O_CREAT | O_EXCL | O_RDWR ;
             mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(outputPointerAnd == NULL){
-                fprintf(stderr,"No file name to create.\n");
+                perror("No file name to create.\n");
                 continue;
             }
             if( (outFile = open(outputPointer,flags,mode) ) < 0 ){
-                fprintf(stderr,"%s: File already exists.\n",outputPointer);
+                perror("File already exists.\n");
                 continue;
             }
         }
@@ -168,7 +168,7 @@ int main(int argc, char *argv[] )
         }
         else if(strcmp(newargv[0],"cd") == 0  && wordCount == 2){
             if( chdir(newargv[1]) == -1){
-                fprintf(stderr,"No file or folder in current directory.\n");
+                perror("No file or folder in current directory.\n");
 
             }
             else{
@@ -178,7 +178,7 @@ int main(int argc, char *argv[] )
             }
         }
         else if(strcmp(newargv[0],"cd") == 0  && wordCount > 2){
-            fprintf(stderr,"To many parameters for cd.\n");
+             perror("To many parameters for cd.\n");
 
         }
         else{
@@ -224,7 +224,7 @@ int main(int argc, char *argv[] )
                 }
 
                 if((execvp(*newargv, newargv)) < 0){ // this executes the command
-                    fprintf(stderr,"%s: Command not found.\n",newargv[0]);
+                    perror("Command not found.\n");
                     exit(9);
                 }
             }
