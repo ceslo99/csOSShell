@@ -272,11 +272,10 @@ int parse(){
     // While loop will keep getting word until there is none left, returns 0
     while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
 
-
         if(bangFlag != 0){
-            fflush(stdin);
             continue;
         }
+
         if(c == -1 && size == 0){ // Done returns -1 and check if that is the first word
 
             doneFlag = 1;
@@ -289,22 +288,9 @@ int parse(){
         }
 
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
-            //strncpy(myargv, onePreviousargv, MAXITEM);
             bangFlag++;
-            int k = 0;
-            int hit =0;
-            while(hit != oldsize){
-                if(onePreviousargv[k] == '\0'){
-                    hit++;
-                    myargv[k] = '\0';
-                }
-                else{
-                    myargv[k] = onePreviousargv[k];
-                }
 
-                k++;
-            }
-            return oldsize;
+            continue;
         }
         else if(c == -1){
 
@@ -337,7 +323,7 @@ int parse(){
             // myargv will put next word after null terminal
             // arvpointer is c plus 1
             // Increment size of words counted
-        else{
+        else {
             newargv[newargvpointerPosition++] = myargv + argvpointerPosition;
             myargv[argvpointerPosition + c] = '\0';
             argvpointerPosition += c + 1;
@@ -345,12 +331,27 @@ int parse(){
         }
     }
 
-    newargv[newargvpointerPosition] = NULL;
-
     if(bangFlag != 0){
         bangFlag = 0;
+        int k = 0;
+        int hit =0;
+        while(hit != oldsize){
+            if(onePreviousargv[k] == '\0'){
+                hit++;
+                myargv[k] = '\0';
+            }
+            else{
+                myargv[k] = onePreviousargv[k];
+            }
 
+            k++;
+        }
+
+        return oldsize;
     }
+    newargv[newargvpointerPosition] = NULL;
+
+
     oldsize = size;
     return size;
 }
