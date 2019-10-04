@@ -181,72 +181,75 @@ int main(int argc, char *argv[] )
             fprintf(stderr,"To many parameters for cd.\n");
 
         }
+        else{
+            /////////////////// fork code/////////////////////////
+            fflush(stdout);
+            fflush(stderr);
+
+            child = fork();
+
+            if(child < 0){
+                printf("Can't Fork!");
+                exit(1);
+            }
+            else if(child == 0){
+                if(backgroundFlag != 0 && lessThanFlag != 0){
+                    int devnull;
+                    flags = O_RDONLY;
+                    if((devnull = open("/dev/null",flags)) < 0){
+                        //fprintf(stderr,"Failed to open /dev/null.\n");
+                        perror("/dev/null.\n");
+                        exit(9);
+                    }
+                    dup2(devnull,STDIN_FILENO);
+                    close(devnull);
+                }
 
 
-        /////////////////// fork code/////////////////////////
-        fflush(stdout);
-        fflush(stderr);
+                ///////////// ">" code/////////////
+                if(greaterThanFlag != 0 && diagnosticFlag == 0){
+                    dup2(outFile,STDOUT_FILENO);
+                    close(outFile);
+                }
 
-        child = fork();
+                //////////// "<" code/////////////
+                if(lessThanFlag != 0){
+                    dup2(inFile,STDIN_FILENO);
+                    close(inFile);
+                }
+                if(diagnosticFlag != 0){
+                    dup2(outFile,STDOUT_FILENO);
+                    dup2(outFile,STDOUT_FILENO);
+                    close(outFile);
+                }
 
-        if(child < 0){
-            printf("Can't Fork!");
-            exit(1);
-        }
-        else if(child == 0){
-            if(backgroundFlag != 0 && lessThanFlag != 0){
-                int devnull;
-                flags = O_RDONLY;
-                if((devnull = open("/dev/null",flags)) < 0){
-                    //fprintf(stderr,"Failed to open /dev/null.\n");
-                    perror("/dev/null.\n");
+                if((execvp(*newargv, newargv)) < 0){ // this executes the command
+                    fprintf(stderr,"%s: Command not found.\n",newargv[0]);
                     exit(9);
                 }
-                dup2(devnull,STDIN_FILENO);
-                close(devnull);
+            }
+            else if( child < 0){
+                printf("Fork was unsucessful\n");
+                exit(1);
             }
 
-
-            ///////////// ">" code/////////////
-            if(greaterThanFlag != 0 && diagnosticFlag == 0){
-                dup2(outFile,STDOUT_FILENO);
-                close(outFile);
+            if(backgroundFlag !=0){ //when & you will place in background and set STDIN to /dev/null
+                printf("%s [%d]\n", *newargv , child);
+                backgroundFlag = 0;
+                continue;
             }
-
-            //////////// "<" code/////////////
-            if(lessThanFlag != 0){
-                dup2(inFile,STDIN_FILENO);
-                close(inFile);
-            }
-            if(diagnosticFlag != 0){
-                dup2(outFile,STDOUT_FILENO);
-                dup2(outFile,STDOUT_FILENO);
-                close(outFile);
-            }
-
-            if((execvp(*newargv, newargv)) < 0){ // this executes the command
-                fprintf(stderr,"%s: Command not found.\n",newargv[0]);
-                exit(9);
-            }
-        }
-        else if( child < 0){
-            printf("Fork was unsucessful\n");
-            exit(1);
-        }
-
-        if(backgroundFlag !=0){ //when & you will place in background and set STDIN to /dev/null
-            printf("%s [%d]\n", *newargv , child);
-            backgroundFlag = 0;
-            continue;
-        }
-        else{
-            for(;;){
-                pid = wait(NULL);
-                if(pid == child){
-                    break;
+            else{
+                for(;;){
+                    pid = wait(NULL);
+                    if(pid == child){
+                        break;
+                    }
                 }
             }
         }
+
+
+
 
 
     }
