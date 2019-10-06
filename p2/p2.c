@@ -44,15 +44,17 @@ int file; // Save file if given in argument
 * */
 int main(int argc, char *argv[] )
 {
-   int devnull;
-   int flags = 0;
-   int mode = 0;
-   int outFile = 0;
-   int inFile = 0;
-   int backgroundFlag = 0;
-   int wordCount = 0; // Needed for number of words to be able to check conditions later
-   (void) signal(SIGTERM, myhandler);
-   setpgid(0,0);
+    int devnull; // Saves open dev/null
+    int flags = 0; // Flags for open, create, read ,write
+    int mode = 0; // Mode of open files
+    int outFile = 0; // Saves file that is open
+    int inFile = 0; // Saves file that is open
+    int backgroundFlag = 0; // & counter
+    int wordCount = 0; // Needed for number of words to be able to check conditions later
+    int k = 0; // needed for bang bang while loop
+    int hit =0; // // need to \0 counter for bang bang while loop
+    (void) signal(SIGTERM, myhandler);
+    setpgid(0,0);
 
    /*
     * Checks if there is something in argv
@@ -81,8 +83,8 @@ int main(int argc, char *argv[] )
         * since we place '\0' after each word, we use wrod count to find all
         * we do this since  normally it would stop the loop after it finds the first '\0'
         * saves every char in onepreviousargv*/
-       int k = 0;
-       int hit =0;
+       k = 0;
+       hit =0;
        while(hit != wordCount){
            if(myargv[k] == '\0'){
                hit++;
