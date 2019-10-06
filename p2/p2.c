@@ -55,22 +55,21 @@ int main(int argc, char *argv[] )
     int hit =0; // // need to \0 counter for bang bang while loop
     (void) signal(SIGTERM, myhandler);
     setpgid(0,0);
-
-   /*
-    * Checks if there is something in argv
-    * tries to open the file and if successful dup2 to replace stdin
-    * */
-   if(argc > 1){
-       file = open( argv[1], O_RDONLY );
-       if ( file < 0 )
-       {
-           perror(argv[1]);
-   }
-       else
-       {
-           dup2(file,STDIN_FILENO);
-       }
-   }
+    /*
+     * Checks if there is something in argv
+     * tries to open the file and if successful dup2 to replace stdin for file
+     * */
+    if(argc > 1){
+        file = open( argv[1], O_RDONLY );
+        if ( file < 0 )// If file doesn't exist
+        {
+            perror(argv[1]);
+        }
+        else
+        {
+            dup2(file,STDIN_FILENO);
+        }
+    }
    for(;;) { // Will break if there is a done or EOF signal
        doneFlag = 0;
        diagnosticFlag = 0;
