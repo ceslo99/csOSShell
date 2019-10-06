@@ -34,7 +34,7 @@ int bangFlag = 0;
 int child = 0;
 int pid = 0 ;
 
-int file;
+int file; 
 
 /*
 * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
