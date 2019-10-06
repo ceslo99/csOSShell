@@ -204,201 +204,209 @@ int main(int argc, char *argv[] )
                 continue;
             }
         }
-           //// fork code
-           fflush(stdout);
-           fflush(stderr);
+        /*
+         *
+         * */
 
-           child = fork();
+        //// fork code
+        fflush(stdout);
+        fflush(stderr);
 
-
-           if(child < 0){
-
-               printf("Fork was unsucessful\n");
-               exit(1);
-           }
-           else if(child == 0){
-               if(backgroundFlag != 0 && lessThanFlag == 0){
-
-                   flags = O_RDONLY;
-                   if((devnull = open("/dev/null",flags)) < 0){
-                       perror("/dev/null.\n");
-                       exit(9);
-                   }
-                   dup2(devnull,STDIN_FILENO);
-                   close(devnull);
-               }
-               //// ">" code
-               if(greaterThanFlag != 0){
-
-                   dup2(outFile,STDOUT_FILENO);
-                   close(outFile);
-               }
-
-               //// "<" code
-               if(lessThanFlag != 0){
-
-                   dup2(inFile,STDIN_FILENO);
-                   close(inFile);
-               }
-               //// ">&"
-               if(diagnosticFlag != 0){
-
-                   dup2(outFile,STDOUT_FILENO);
-                   dup2(outFile,STDERR_FILENO);
-                   close(outFile);
-               }
-
-               if((execvp(*newargv, newargv)) < 0){ // this executes the command
-
-                   fprintf(stderr, "%s Command not found. \n",newargv[0]);
-                   exit(9);
-               }
-
-           }
-           // place in background and set STDIN set to/dev/null when & is present
-           if(backgroundFlag !=0){
-
-               printf("%s [%d]\n", *newargv , child);
-               backgroundFlag = 0;
-               continue;
-           }
-           else{
-
-               for(;;){
-                   pid = wait(NULL);
-                   if(pid == child){
-                       break;
-                   }
-               }
-           }
+        child = fork();
 
 
+        if(child < 0){
 
-   }
+            printf("Fork was unsucessful\n");
+            exit(1);
+        }
+        else if(child == 0){
+            if(backgroundFlag != 0 && lessThanFlag == 0){
 
-   killpg(getpgrp(), SIGTERM);
-   printf("p2 terminated.\n");
-   exit(0);
+                flags = O_RDONLY;
+                if((devnull = open("/dev/null",flags)) < 0){
+                    perror("/dev/null.\n");
+                    exit(9);
+                }
+                dup2(devnull,STDIN_FILENO);
+                close(devnull);
+            }
+            //// ">" code
+            if(greaterThanFlag != 0 && diagnosticFlag == 0){
+                dup2(outFile,STDOUT_FILENO);
+                close(outFile);
+            }
+
+            //// "<" code
+            if(lessThanFlag != 0){
+                dup2(inFile,STDIN_FILENO);
+                close(inFile);
+            }
+            //// ">&"
+            if(diagnosticFlag != 0){
+                dup2(outFile,STDOUT_FILENO);
+                dup2(outFile,STDERR_FILENO);
+                close(outFile);
+            }
+            if((execvp(*newargv, newargv)) < 0){ // this executes the command
+
+                fprintf(stderr, "%s Command not found. \n",newargv[0]);
+                exit(9);
+            }
+
+        }
+        // place in background and set STDIN set to/dev/null when & is present
+        if(backgroundFlag !=0){
+
+            printf("%s [%d]\n", *newargv , child);
+            backgroundFlag = 0;
+            continue;
+        }
+        else{
+
+            for(;;){
+                pid = wait(NULL);
+                if(pid == child){
+                    break;
+                }
+            }
+        }
+
+    }
+
+    killpg(getpgrp(), SIGTERM);
+    printf("p2 terminated.\n");
+    exit(0);
 }
 
-
 /*
-*  calls getword and able to return size of word.
+*  Calls getword and able to return size of word.
 *  especial cases if it runs to done, eof, !! and metacharacters
+*  used to put user input in myarvg and newargv
 */
 int parse(){
 
-   int size = 0;
-   int argvpointerPosition = 0;
-   int newargvpointerPosition = 0;
-   int k = 0;
-   int hit =0;
-   int simpleboolean = 0;
+    int size = 0;
+    int argvpointerPosition = 0;
+    int newargvpointerPosition = 0;
+    int k = 0;
+    int hit =0;
+    int simpleboolean = 0;
 
 
-   greaterThanFlag = 0;
-   lessThanFlag = 0;
+    greaterThanFlag = 0;
+    lessThanFlag = 0;
 
 
-   // While loop will keep getting word until there is none left, returns 0
-   while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
+    // While loop will keep getting word until there is none left, returns 0
+    while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
 
-       //if bang bang found then we want to use old newargv so just continue
-       if(bangFlag != 0){
-           continue;
-       }
+        //if bang bang found then we want to use old newargv so just continue
+        if(bangFlag != 0){
+            continue;
+        }
 
-       if(c == -1 && size == 0){ // Done returns -1 and check if that is the first word
+        if(c == -1 && size == 0){ // Done returns -1 and check if that is the first word
 
-           doneFlag = 1;
-           return size;
-       }
+            doneFlag = 1;
+            return size;
+        }
 
-           // Condition if done is in the middle of sentence continue
-       else if(c == -1 && strcmp(&myargv[argvpointerPosition], "done" ) == 0){
+            // Condition if done is in the middle of sentence continue
+        else if(c == -1 && strcmp(&myargv[argvpointerPosition], "done" ) == 0){
 
-           c = 4;
-       }
-           //allows to continue future words
-       else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
-           bangFlag++;
-           continue;
-       }
+            c = 4;
+        }
+            //allows to continue future words
+        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
+            bangFlag++;
+            continue;
+        }
 
-       else if(c == -1){ // eof found
+        else if(c == -1){ // eof found
 
-           break;
-       }
+            break;
+        }
 
-       // Checks for > sign and . leaves pointer in same spot, next round will be replaced by file name
-       // since not adding into and pointing at same location
-       if(c == 1 && myargv[argvpointerPosition] == '>' ){
-           greaterThanFlag++;
-           simpleboolean = 2;
-           outputPointer = myargv + argvpointerPosition+2;
-       }
-       else if(c == 1 && myargv[argvpointerPosition] == '<'){
-           lessThanFlag++;
-           simpleboolean = 2;
-           inputPointer = myargv + argvpointerPosition+2;
+        // Checks for > sign and . leaves pointer in same spot, next round will be replaced by file name
+        // since not adding into and pointing at same location
+        if(c == 1 && myargv[argvpointerPosition] == '>' ){
+            greaterThanFlag++;
+            simpleboolean = 2;
+            outputPointer = myargv + argvpointerPosition+2;
+        }
+        else if(c == 1 && myargv[argvpointerPosition] == '<'){
+            lessThanFlag++;
+            simpleboolean = 2;
+            inputPointer = myargv + argvpointerPosition+2;
 
-       }
+        }
 
-       else if(c == 2 && strcmp(&myargv[argvpointerPosition], ">&") == 0 ){
-           diagnosticFlag++;
-           greaterThanFlag++;
-           simpleboolean = 2;
-           outputPointer = myargv + argvpointerPosition +3;
+        else if(c == 2 && strcmp(&myargv[argvpointerPosition], ">&") == 0 ){
+            diagnosticFlag++;
+            greaterThanFlag++;
+            simpleboolean = 2;
+            outputPointer = myargv + argvpointerPosition +3;
 
-       }
-           // Will skip this round if above statement is true
-           // Points word of myargv into newargv. Adds end of string in myargv of position plus c.
-           // myargv will put next word after null terminal
-           // arvpointer is c plus 1
-           // Increment size of words counted
-       else if(simpleboolean < 1){
-           newargv[newargvpointerPosition++] = myargv + argvpointerPosition;
-           size++;
-       }
-       myargv[argvpointerPosition + c] = '\0';
-       argvpointerPosition += c + 1;
-       if(simpleboolean > 0){
-           simpleboolean--;
-       }
-   }
-
-   /*
-    * After is continues any left over words once !! is found then we need to put previous command in myarg
-    * newargv hasnt changed since we continued above and return oldsize*/
-   if(bangFlag != 0){
-       bangFlag = 0;
-       k = 0;
-       hit =0;
-       while(hit != oldsize){
-           if(onePreviousargv[k] == '\0'){
-               hit++;
-               myargv[k] = '\0';
-           }
-           else{
-               myargv[k] = onePreviousargv[k];
-           }
-
-           k++;
-       }
-
-       return oldsize;
-   }
-   newargv[newargvpointerPosition] = NULL;
-
-   oldsize = size; // stores old size before returning
-   if(outputPointer != NULL){ // issue where it was ampersand was being saved as output file
-      if(strcmp(outputPointer,"&") == 0){
-            outputPointer = NULL;
-      }
+        }
+            // Will skip this round if above statement is true
+            // Points word of myargv into newargv. Adds end of string in myargv of position plus c.
+            // myargv will put next word after null terminal
+            // arvpointer is c plus 1
+            // Increment size of words counted
+        else if(simpleboolean < 1){
+            newargv[newargvpointerPosition++] = myargv + argvpointerPosition;
+            size++;
+        }
+        myargv[argvpointerPosition + c] = '\0';
+        argvpointerPosition += c + 1;
+        if(simpleboolean > 0){
+            simpleboolean--;
+        }
     }
-   return size;
+
+    /*
+     * After is continues any left over words once !! is found then we need to put previous command in myarg
+     * newargv hasnt changed since we continued above and return oldsize
+     * */
+    if(bangFlag != 0){
+        bangFlag = 0;
+        k = 0;
+        hit =0;
+        while(hit != oldsize){
+            if(onePreviousargv[k] == '\0'){
+                hit++;
+                myargv[k] = '\0';
+            }
+            else{
+                myargv[k] = onePreviousargv[k];
+            }
+
+            k++;
+        }
+        return oldsize;
+    }
+    newargv[newargvpointerPosition] = NULL;
+
+//    printf("newargv[0]: %s\n",newargv[0]);
+//    printf("newargv[1]: %s\n",newargv[1]);
+//    printf("newargv[2]: %s\n",newargv[2]);
+//    printf("output: %s\n",outputPointer);
+//    printf("wordcount: %d\n",size);
+//    printf("------------------------------\n");
+    oldsize = size; // stores old size before returning
+    if(outputPointer != NULL){ // issue where it was ampersand was being saved as output file
+        if(strcmp(outputPointer,"&") == 0){
+            outputPointer = NULL;
+        }
+    }
+
+    return size;
 }
 
 void myhandler(){
 }
+
+
+
 
