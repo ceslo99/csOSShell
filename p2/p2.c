@@ -383,6 +383,11 @@ int parse(){
    newargv[newargvpointerPosition] = NULL;
 
    oldsize = size; // stores old size before returning
+   if(outputPointer != NULL){ // issue where it was ampersand was being saved as output file
+      if(strcmp(outputPointer,"&") == 0){
+            outputPointer = NULL;
+      }
+    }
    return size;
 }
 
