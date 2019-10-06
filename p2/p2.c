@@ -77,11 +77,12 @@ int main(int argc, char *argv[] )
        printf("%%1%% "); // For user prompt
        wordCount = parse(); // Parse will add each word into myargv to have access to it
 
-       /*
-        * used to store previous user input as soon as it returns from parse.
-        * since we place '\0' after each word, we use wrod count to find all
-        * we do this since  normally it would stop the loop after it finds the first '\0'
-        * saves every char in onepreviousargv*/
+        /*
+         * Used to store previous user input as soon as it returns from parse.
+         * since we place '\0' after each word, we use word count to find all
+         * we do this since  normally it would stop the loop after it finds the first '\0'
+         * saves every char in onepreviousargv
+         * */
        k = 0;
        hit =0;
        while(hit != wordCount){
@@ -104,101 +105,105 @@ int main(int argc, char *argv[] )
            continue;
        }
 
-       //// check '>' , '<' error
-       if(greaterThanFlag > 1 || lessThanFlag > 1){ // if to many directional arguments, error and continue
-           fprintf(stderr,"Too many redirectories.\n");
-           continue;
-       }
+        /* Checks if last char in newargv is '&' to run process in the background.
+         * in order to pass future cases must decrement wordcount and update backgroundFlag
+         * */
+        if( strcmp(newargv[wordCount-1],"&")  == 0){
+
+            backgroundFlag++;
+            newargv[wordCount -1] = NULL; //remove ampersand and put a null there
+            wordCount--;
+        }
+
+        /*
+         * Checks for all possible cases of CD
+         * First checks if user just types cd and takes to home directory
+         * Others checks if there is a certain path it wants to go
+         * Last checks if to many paths given
+         * if cd is not given then fork!
+         * */
+        if(strcmp(newargv[0],"cd") == 0  && wordCount == 1){
+
+            chdir(getenv("HOME"));
+            continue;
+        }
+
+        else if(strcmp(newargv[0],"cd") == 0  && wordCount == 2){
+
+            if( chdir(newargv[1]) == -1){
+                perror("No folder in current directory.\n");
+                continue;
+
+            }
+            else{
+
+                chdir(newargv[1]);
+                continue;
+            }
+        }
+
+        else if(strcmp(newargv[0],"cd") == 0  && wordCount > 2){
+
+            perror("To many parameters for cd.\n");
+            continue;
+        }
+
+        /*
+         * Checks if there is errors of input output first
+         * If to many parameters, pointed to a NULL file or already exist, don't overwrite
+         * open files for both input and output if nothing fails
+         * */
+
+        //// check '>' , '<' error
+        if(greaterThanFlag > 1 || lessThanFlag > 1){ // if to many directional arguments, error and continue
+            fprintf(stderr,"Too many redirectories.\n");
+            continue;
+        }
 
 
-       //// check '>'
-       if(greaterThanFlag == 1 && diagnosticFlag == 0){
-
-           flags = O_CREAT | O_EXCL | O_RDWR ;
-           mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-           if(outputPointer == NULL){ // if there is no file to point then error
-               fprintf(stderr,"No file name to create.\n");
-               continue;
-           }
-           if( (outFile = open(outputPointer,flags,mode) ) < 0 ){ // checks if file doesn't exist
-               perror(outputPointer);
-               continue;
-           }
-       }
-
-
-       //// check '<'
-       if(lessThanFlag == 1){
-
-           flags = O_RDONLY;
-           if(inputPointer == NULL){ // if there is no file to point then error
-               fprintf(stderr,"No file name to create.\n");
-               continue;
-           }
-           if( (inFile = open(inputPointer,flags ) < 0 ) ) { // checks if file doesn't exist
-               perror(inputPointer);
-               continue;
-           }
-       }
-
-       //// check '>&'
-       if( diagnosticFlag != 0 ) {
-
-           flags = O_CREAT | O_EXCL | O_RDWR ;
-           mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-           if(outputPointer == NULL){ // if there is no file to point then error
-               fprintf(stderr,"No file name to create.\n");
-               continue;
-           }
-           if( (outFile = open(outputPointer,flags,mode) ) < 0 ){ // checks if file doesn't exist
-               perror(outputPointer);
-               continue;
-           }
-       }
+        //// check '>'
+        if(greaterThanFlag == 1 && diagnosticFlag == 0){
+            flags = O_CREAT | O_EXCL | O_RDWR ;
+            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+            if(outputPointer == NULL){ // if there is no file to point then error
+                fprintf(stderr,"No file name to create.\n");
+                continue;
+            }
+            if( (outFile = open(outputPointer,flags,mode) ) < 0 ){ // checks if file doesn't exist
+                perror(outputPointer);
+                continue;
+            }
+        }
 
 
-       /* Checks if last char in newargv is '&' to run process in the background.
-        * in order to pass future cases must decrement wordcount and update backgroundFlag*/
-       if( strcmp(newargv[wordCount-1],"&")  == 0){
+        //// check '<'
+        if(lessThanFlag == 1){
 
-           backgroundFlag++;
-           newargv[wordCount -1] = NULL; //remove amperstand and put a null there
-           wordCount--;
-       }
+            flags = O_RDONLY;
+            if(inputPointer == NULL){ // if there is no file to point then error
+                fprintf(stderr,"No file name to create.\n");
+                continue;
+            }
+            if( (inFile = open(inputPointer,flags ) < 0 ) ) { // checks if file doesn't exist
+                perror(inputPointer);
+                continue;
+            }
+        }
 
-       /*
-        * Checks for all possible cases of CD
-        * First checks if user just types cd and takes to home directory
-        * Others checks if there is a certain path it wants to go
-        * Last checks if to many paths given
-        * if cd is not given then fork!
-        * */
-       if(strcmp(newargv[0],"cd") == 0  && wordCount == 1){
+        //// check '>&'
+        if( diagnosticFlag != 0 ) {
 
-           chdir(getenv("HOME"));
-           continue;
-       }
-
-       else if(strcmp(newargv[0],"cd") == 0  && wordCount == 2){
-
-           if( chdir(newargv[1]) == -1){
-               perror("No folder in current directory.\n");
-               continue;
-
-           }
-           else{
-
-               chdir(newargv[1]);
-               continue;
-           }
-       }
-
-       else if(strcmp(newargv[0],"cd") == 0  && wordCount > 2){
-
-           perror("To many parameters for cd.\n");
-           continue;
-       }
-
+            flags = O_CREAT | O_EXCL | O_RDWR ;
+            mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+            if(outputPointer == NULL){ // if there is no file to point then error
+                fprintf(stderr,"No file name to create.\n");
+                continue;
+            }
+            if( (outFile = open(outputPointer,flags,mode) ) < 0 ){ // checks if file doesn't exist
+                perror(outputPointer);
+                continue;
+            }
+        }
            //// fork code
            fflush(stdout);
            fflush(stderr);
