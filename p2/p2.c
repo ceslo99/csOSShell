@@ -270,7 +270,7 @@ int main(int argc, char *argv[] )
 
    }
 
-   kill(getpgrp(), SIGTERM);
+   killpg(getpgrp(), SIGTERM);
    printf("p2 terminated.\n");
    exit(0);
 }
