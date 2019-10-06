@@ -6,15 +6,17 @@
 *
 * GraderNotes:
 * I wrote this code myself and has no bugs
-*Sources:
+* Sources:
 * C by Discovery by Foster
 *
 * */
 
+/* Parse method
+ * Calls the getword method and counts number of words, stores it in myargv
+ * Use newargv to save the pointer of beginning of word in myargv
+ * Sets flags for certain cases for bang bang, >, <, >&
+ * */
 #include "p2.h"
-// Parse method.2
-// Calls the getword method and counts number of words, stores it in myargv
-// Use newargv to save the pointer of each word
 
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
 int oldsize = -1; // keep track of previous number of words in argv
@@ -26,15 +28,15 @@ char *onePreviousnewargv[MAXITEM];
 
 char *outputPointer; // Pointer to beginning of file '>'
 char *inputPointer; // Pointer to beginning of file '<'
-int doneFlag =0;
-int greaterThanFlag = 0;
-int lessThanFlag = 0;
-int diagnosticFlag = 0;
-int bangFlag = 0;
-int child = 0;
-int pid = 0 ;
+int doneFlag =0; // If user types done at the beginning of input
+int greaterThanFlag = 0; // How many redirects counter for >
+int lessThanFlag = 0; // How many redirects counted for <
+int diagnosticFlag = 0; // how many >& found
+int bangFlag = 0; // Found !! at the beginning of input
+int child = 0; // Used to save forked process PID
+int pid = 0 ; // Used to save wait return value
 
-int file; 
+int file; // Save file if given in argument
 
 /*
 * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
