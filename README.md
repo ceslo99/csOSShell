@@ -10,7 +10,7 @@ p2 Folder:
 * Contains previous getword.c and worked on p2.c which is the main function. Program read input from user
 or file passed in argv. Input will be handled by previous getword.c that is in the parse method.
 * This program will read input from a user or handle a file passed in(argv). This command will be passed to the parse function below, which calls our getword.c. 
-* Able to handle change diretory by user typing 'cd' along with path or folder. 
+* Able to handle change directory by user typing 'cd' along with path or folder. 
 Handles errors if user inputs to many files. 
 * Also, handled redirectories >, < and background processes.
 
