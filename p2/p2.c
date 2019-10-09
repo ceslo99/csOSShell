@@ -16,6 +16,7 @@
  * Use newargv to save the pointer of beginning of word in myargv
  * Sets flags for certain cases for bang bang, >, <, >&
  * */
+
 #include "p2.h"
 
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
@@ -42,6 +43,7 @@ int file; // Save file if given in argument
 * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
 * checks for special conditions and will break when finds done is first word or EOF
 * */
+
 int main(int argc, char *argv[] )
 {
     int devnull; // Saves open dev/null
@@ -55,10 +57,12 @@ int main(int argc, char *argv[] )
     int hit =0; // // need to \0 counter for bang bang while loop
     (void) signal(SIGTERM, myhandler);
     setpgid(0,0);
+
     /*
      * Checks if there is something in argv
      * tries to open the file and if successful dup2 to replace stdin for file
      * */
+
     if(argc > 1){
         file = open( argv[1], O_RDONLY );
         if ( file < 0 )// If file doesn't exist
@@ -83,6 +87,7 @@ int main(int argc, char *argv[] )
          * we do this since  normally it would stop the loop after it finds the first '\0'
          * saves every char in onepreviousargv
          * */
+
         k = 0;
         hit =0;
         while(hit != wordCount){
@@ -108,8 +113,8 @@ int main(int argc, char *argv[] )
         /* Checks if last char in newargv is '&' to run process in the background.
          * in order to pass future cases must decrement wordcount and update backgroundFlag
          * */
+
         if( strcmp(newargv[wordCount-1],"&")  == 0){
-           // printf("%s : %s : %d : &112\n", outputPointer, inputPointer, backgroundFlag);
             backgroundFlag++;
             newargv[wordCount -1] = NULL; //remove ampersand and put a null there
             wordCount--;
@@ -122,6 +127,7 @@ int main(int argc, char *argv[] )
          * Last checks if to many paths given
          * if cd is not given then fork!
          * */
+
         if(strcmp(newargv[0],"cd") == 0  && wordCount == 1){
 
             chdir(getenv("HOME"));
@@ -129,11 +135,9 @@ int main(int argc, char *argv[] )
         }
 
         else if(strcmp(newargv[0],"cd") == 0  && wordCount == 2){
-
             if( chdir(newargv[1]) == -1){ //changes directory in this line but if -1 then report error.
                 perror("No folder in current directory.\n");
                 continue;
-
             }
             else{
                 continue;
@@ -161,7 +165,6 @@ int main(int argc, char *argv[] )
 
         //// check '>'
         if(greaterThanFlag == 1 && diagnosticFlag == 0){
-           // printf("%s : %s : %d : >164\n", outputPointer, inputPointer, backgroundFlag);
             flags = O_CREAT | O_EXCL | O_RDWR ;
             mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(outputPointer == NULL){ // if there is no file to point then error
@@ -177,13 +180,12 @@ int main(int argc, char *argv[] )
 
         //// check '<'
         if(lessThanFlag == 1){
-          //  printf("%s : %s : %d : <180\n", outputPointer, inputPointer, backgroundFlag);
             flags = O_RDONLY;
             if(inputPointer == NULL){ // if there is no file to point then error
                 fprintf(stderr,"No file name to create.\n");
                 continue;
             }
-            if( (inFile = open(inputPointer,flags ) < 0 ) ) { // checks if file doesn't exist
+            if ((inFile = open(inputPointer, flags)) == -1) { // checks if file doesn't exist
                 perror(inputPointer);
                 continue;
             }
@@ -191,7 +193,6 @@ int main(int argc, char *argv[] )
 
         //// check '>&'
         if( diagnosticFlag != 0 ) {
-
             flags = O_CREAT | O_EXCL | O_RDWR ;
             mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(outputPointer == NULL){ // if there is no file to point then error
@@ -215,13 +216,11 @@ int main(int argc, char *argv[] )
 
 
         if(child < 0){
-
             printf("Fork was unsucessful\n");
             exit(1);
         }
         else if(child == 0){
             if(backgroundFlag != 0 && lessThanFlag == 0){
-               // printf("%s : %s : %d : store devnull224\n", outputPointer, inputPointer, backgroundFlag);
                 flags = O_RDONLY;
                 if((devnull = open("/dev/null",flags)) < 0){
                     perror("/dev/null.\n");
@@ -230,16 +229,15 @@ int main(int argc, char *argv[] )
                 dup2(devnull,STDIN_FILENO);
                 close(devnull);
             }
+
             //// ">" code
             if(greaterThanFlag != 0 && diagnosticFlag == 0){
-            //    printf("%s : %s : %d : 235 outfile\n", outputPointer, inputPointer, outFile);
                 dup2(outFile,STDOUT_FILENO);
                 close(outFile);
             }
 
             //// "<" code
             if(lessThanFlag != 0){
-               // printf("%s : %s : %d : 242 infile\n", outputPointer, inputPointer, inFile);
                 dup2(inFile,STDIN_FILENO);
                 close(inFile);
             }
@@ -250,7 +248,6 @@ int main(int argc, char *argv[] )
                 close(outFile);
             }
             if((execvp(*newargv, newargv)) < 0){ // this executes the command
-              
                 fprintf(stderr, "%s Command not found. \n",newargv[0]);
                 exit(9);
             }
@@ -258,7 +255,6 @@ int main(int argc, char *argv[] )
         }
         // place in background and set STDIN set to/dev/null when & is present
         if(backgroundFlag !=0){
-          //  printf("%s : %s : %d : %s: 261\n", outputPointer, inputPointer, backgroundFlag, *newargv);
             printf("%s [%d]\n", *newargv , child);
             backgroundFlag = 0;
             continue;
@@ -268,7 +264,7 @@ int main(int argc, char *argv[] )
             for(;;){
 
                 pid = wait(NULL);
-               
+
                 if(pid == child){
                     break;
                 }
@@ -393,12 +389,7 @@ int parse(){
     }
     newargv[newargvpointerPosition] = NULL;
 
-//    printf("newargv[0]: %s\n",newargv[0]);
-//    printf("newargv[1]: %s\n",newargv[1]);
-//    printf("newargv[2]: %s\n",newargv[2]);
-//    printf("output: %s\n",outputPointer);
-//    printf("wordcount: %d\n",size);
-//    printf("------------------------------\n");
+
     oldsize = size; // stores old size before returning
     if(outputPointer != NULL){ // issue where it was ampersand was being saved as output file
         if(strcmp(outputPointer,"&") == 0){
@@ -411,6 +402,3 @@ int parse(){
 
 void myhandler(){
 }
-
-
-
