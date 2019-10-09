@@ -6,7 +6,7 @@ csOSShell directory:
 for user input and was able to break down each word based on space, new line, and metacharacters. Returns number 
 letters of word. Used loop to be able to return letterCount of each word until End of File or user types done.
 
-p2 directory:  
+p2 Folder:  
 * Contains previous getword.c and worked on p2.c which is the main function. Program read input from user
 or file passed in argv. Input will be handled by previous getword.c that is in the parse method.
 * This program will read input from a user or handle a file passed in(argv). This command will be passed to the parse function below, which calls our getword.c. 
