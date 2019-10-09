@@ -215,7 +215,7 @@ int main(int argc, char *argv[] )
         child = fork();
 
 
-        if(child < 0){
+        if(child < 0){ 
             printf("Fork was unsucessful\n");
             exit(1);
         }
