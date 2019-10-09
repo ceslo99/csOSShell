@@ -185,7 +185,7 @@ int main(int argc, char *argv[] )
                 fprintf(stderr,"No file name to create.\n");
                 continue;
             }
-            if ((inFile = open(inputPointer, flags)) == -1) { // checks if file doesn't exist
+            if ((inFile = open(inputPointer, flags)) < 0) { // checks if file doesn't exist
                 perror(inputPointer);
                 continue;
             }
@@ -215,7 +215,7 @@ int main(int argc, char *argv[] )
         child = fork();
 
 
-        if(child < 0){ 
+        if(child < 0){
             printf("Fork was unsucessful\n");
             exit(1);
         }
