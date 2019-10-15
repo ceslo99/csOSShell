@@ -1,0 +1,12 @@
+I wrote this code myself and has no bugs
+
+Dealt with the parse first since felt like a good place to start. Handled
+all the errors in there first and gradually added more conditions.
+
+For the bang bang, I was able to get the previous command to work.
+Used afor loop and went through myargv and kept saving it as soon 
+as it finished inparse. If found !! in oarse, then it would ignore
+the rest of the words and before returning, put olldmyargv into
+myargv. will be using Memset later since it's one line of code.
+current code will not work for more than one previous. Will need
+to adjust code for that in following projects.
