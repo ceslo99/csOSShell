@@ -18,62 +18,23 @@
  * */
 
 #include "p2.h"
-
-struct history
-{
-    char myargv[STORAGE * MAXITEM]; // Stores user current input
-    char onePreviousargv[STORAGE * MAXITEM];
-
-    char *outputPointer; // Pointer to beginning of file '>'
-    char *inputPointer; // Pointer to beginning of file '<'
-    int doneFlag; // If user types done at the beginning of input
-    int greaterThanFlag; // How many redirects counter for >
-    int lessThanFlag; // How many redirects counted for <
-    int diagnosticFlag; // how many >& found
-    int bangFlag; // Found !! at the beginning of input
-    int child; // Used to save forked process PID
-    int pid; // Used to save wait return value
-
-    int file; // Save file if given in argument
-    int commandCounter;
-    int appendFlag;
-    int bangCounter;
-    int appenddiagnosticFlag;
-    int argvFlag;
-    int poundFlag;
-    int wordCount;
-
-};
-
-struct history historyArray[10];
-
+int getwordfromArray(char *w);
 
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
 int oldsize = -1; // keep track of previous number of words in argv
 
 char myargv[STORAGE * MAXITEM]; // Stores user current input
 char *newargv[MAXITEM]; // Pointer to beginning of each word.
-int argvwordCount[10];
-char onePreviousargv[STORAGE * MAXITEM];
-char twoPreviousargv[STORAGE * MAXITEM];
-char thirdPreviousargv[STORAGE * MAXITEM];
-char fourthPreviousargv[STORAGE * MAXITEM];
-char fifthPreviousargv[STORAGE * MAXITEM];
-char sixthPreviousargv[STORAGE * MAXITEM];
-char seventhPreviousargv[STORAGE * MAXITEM];
-char eightPreviousargv[STORAGE * MAXITEM];
-char ninthPreviousargv[STORAGE * MAXITEM];
 
-char *onePreviousnewargv[MAXITEM];
-char *twoPreviousnewargv[MAXITEM];
-char *thirdPreviousnewargv[MAXITEM];
-char *fourthPreviousnewargv[MAXITEM];
-char *fifthPreviousnewargv[MAXITEM];
-char *sixthPreviousnewargv[MAXITEM];
-char *seventhPreviousnewargv[MAXITEM];
-char *eightPreviousnewargv[MAXITEM];
-char *ninthPreviousnewargv[MAXITEM];
-
+char oneargv[STORAGE * MAXITEM];
+char twoargv[STORAGE * MAXITEM];
+char thirdargv[STORAGE * MAXITEM];
+char fourthargv[STORAGE * MAXITEM];
+char fifthargv[STORAGE * MAXITEM];
+char sixthargv[STORAGE * MAXITEM];
+char seventhargv[STORAGE * MAXITEM];
+char eighthargv[STORAGE * MAXITEM];
+char ninthargv[STORAGE * MAXITEM];
 
 char *outputPointer; // Pointer to beginning of file '>'
 char *inputPointer; // Pointer to beginning of file '<'
@@ -96,10 +57,6 @@ int appenddiagnosticFlag = 0;
 int argvFlag = 0;
 int poundFlag = 0;
 
-char lastword;
-char templastword[MAXITEM];
-int lastwordSize = 0;
-
 
 /*
  * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
@@ -115,24 +72,6 @@ int lastwordSize = 0;
 
 int main(int argc, char *argv[] )
 {
-    int x = 0;
-    for(x = 0; x < 10; x++){
-        historyArray[x].doneFlag =0; // If user types done at the beginning of input
-        historyArray[x].greaterThanFlag = 0; // How many redirects counter for >
-        historyArray[x].lessThanFlag = 0; // How many redirects counted for <
-        historyArray[x].diagnosticFlag = 0; // how many >& found
-        historyArray[x].bangFlag = 0; // Found !! at the beginning of input
-        historyArray[x].child = 0; // Used to save forked process PID
-        historyArray[x].pid = 0 ; // Used to save wait return value
-
-        historyArray[x].commandCounter = 1;
-        historyArray[x].appendFlag = 0;
-        historyArray[x].bangCounter = 0;
-        historyArray[x].appenddiagnosticFlag = 0;
-        historyArray[x].argvFlag = 0;
-        historyArray[x].poundFlag = 0;
-        historyArray[x].wordCount = 0;
-    }
 
     int devnull; // Saves open dev/null
     int flags = 0; // Flags for open, create, read ,write
@@ -175,8 +114,7 @@ int main(int argc, char *argv[] )
             printf("%%%d%% ",commandCounter); // For user prompt
         }
 
-        historyArray[commandCounterArray].wordCount = parse(); // Parse will add each word into myargv to have access to it
-        argvwordCount[0] = wordCount;
+        wordCount = parse(); // Parse will add each word into myargv to have access to it
 
         /*
          * Used to store previous user input as soon as it returns from parse.
@@ -184,33 +122,6 @@ int main(int argc, char *argv[] )
          * we do this since  normally it would stop the loop after it finds the first '\0'
          * saves every char in onepreviousargv
          * */
-
-
-        memcpy( historyArray[commandCounterArray].onePreviousargv, myargv, (STORAGE * MAXITEM));
-
-
-        memcpy( ninthPreviousargv, eightPreviousargv, (STORAGE * MAXITEM));
-        memcpy( eightPreviousargv, seventhPreviousargv, (STORAGE * MAXITEM));
-        memcpy( seventhPreviousargv, sixthPreviousargv, (STORAGE * MAXITEM));
-        memcpy( sixthPreviousargv, fifthPreviousargv, (STORAGE * MAXITEM));
-        memcpy( fifthPreviousargv, fourthPreviousargv, (STORAGE * MAXITEM));
-        memcpy( fourthPreviousargv, thirdPreviousargv, (STORAGE * MAXITEM));
-        memcpy( thirdPreviousargv, twoPreviousargv, (STORAGE * MAXITEM));
-        memcpy( twoPreviousargv, onePreviousargv, (STORAGE * MAXITEM));
-        memcpy( onePreviousargv, myargv, (STORAGE * MAXITEM));
-
-        memcpy( ninthPreviousnewargv, eightPreviousnewargv, MAXITEM);
-        memcpy( eightPreviousnewargv, seventhPreviousnewargv, MAXITEM);
-        memcpy( seventhPreviousnewargv, sixthPreviousnewargv, MAXITEM);
-        memcpy( fifthPreviousnewargv, fourthPreviousnewargv, MAXITEM);
-        memcpy( fourthPreviousnewargv, thirdPreviousnewargv, MAXITEM);
-        memcpy( thirdPreviousnewargv, twoPreviousnewargv, MAXITEM);
-        memcpy( twoPreviousnewargv, onePreviousnewargv, MAXITEM);
-        memcpy( onePreviousnewargv, newargv, MAXITEM);
-        int countdown = 9;
-        for(countdown; countdown > 0; countdown--){
-            argvwordCount[countdown] = argvwordCount[countdown-1] ;
-        }
 
 
         if (wordCount == -1 || doneFlag) { // Done is seen in myargv first position then quit program
@@ -494,51 +405,6 @@ int parse(){
             bangCounter = 2;
             continue;
         }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!3" ) == 0 )){
-            bangFlag++;
-            bangCounter = 3;
-            continue;
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!4" ) == 0 )){
-            bangFlag++;
-            bangCounter = 4;
-            continue;
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!5" ) == 0 )){
-            bangFlag++;
-            bangCounter = 5;
-            continue;
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!6" ) == 0 )){
-            bangFlag++;
-            bangCounter = 6;
-            continue;
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!7" ) == 0 )){
-            bangFlag++;
-            bangCounter = 7;
-            continue;
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!8" ) == 0 )){
-            bangFlag++;
-            bangCounter = 8;
-            continue;
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!9" ) == 0 )){
-            bangFlag++;
-            bangCounter = 9;
-            continue;
-        }
-        else if((strcmp( &myargv[argvpointerPosition], "!$" ) == 0 )){//&myargv[argvpointerPosition-lastwordSize-1]
-
-            int n = 0;
-            //for(n = 0; n < lastwordSize; n++){
-            myargv[argvpointerPosition] = "@!";
-            printf("*%s\n",&myargv[argvpointerPosition]);
-           // }
-
-            c = lastwordSize;
-        }
 
 
         else if(c == -1){ // eof found
@@ -589,15 +455,6 @@ int parse(){
             size++;
         }
 
-        if(myargv[argvpointerPosition] != '\0' ){
-            int n = 0;
-            for(n= 0; n < c; n++){
-                templastword[n] = myargv[argvpointerPosition+ n];
-            }
-           // memcpy (templastword, myargv[argvpointerPosition], sizeof(myargv[argvpointerPosition]));
-            printf("*%s\n",templastword);
-            lastwordSize = c;
-        }
 
         myargv[argvpointerPosition + c] = '\0';
         argvpointerPosition += c + 1;
@@ -608,68 +465,6 @@ int parse(){
 
     }
 
-    /*
-     * After is continues any left over words once !! is found then we need to put previous command in myarg
-     * newargv hasnt changed since we continued above and return oldsize
-     * */
-    if(bangFlag != 0){
-        bangFlag = 0;
-
-        if(bangCounter == 2){
-            memcpy(myargv, twoPreviousargv, (STORAGE * MAXITEM));
-            printf("*&&*\n");
-            dup2(*myargv, STDIN_FILENO);
-            int k = 0;
-             k =parse();
-             printf("*&*\n");
-            return k;
-            memcpy(newargv, twoPreviousnewargv, MAXITEM);
-            oldsize = argvwordCount[2];
-
-        }
-        else if(bangCounter == 3){
-            memcpy(myargv, thirdPreviousargv, (STORAGE * MAXITEM));
-            memcpy(newargv, thirdPreviousnewargv, MAXITEM);
-            oldsize = argvwordCount[3];
-        }
-        else if(bangCounter == 4){
-            memcpy(myargv, fourthPreviousargv, (STORAGE * MAXITEM));
-            memcpy(newargv, fourthPreviousnewargv, MAXITEM);
-            oldsize = argvwordCount[4];
-        }
-        else if(bangCounter == 5){
-            memcpy(myargv, fifthPreviousargv, (STORAGE * MAXITEM));
-            memcpy(newargv, fifthPreviousnewargv, MAXITEM);
-            oldsize = argvwordCount[5];
-        }
-        else if(bangCounter == 6){
-            memcpy(myargv, sixthPreviousargv, (STORAGE * MAXITEM));
-            memcpy(newargv, sixthPreviousnewargv, MAXITEM);
-            oldsize = argvwordCount[6];
-        }
-        else if(bangCounter == 7){
-            memcpy(myargv, seventhPreviousargv, (STORAGE * MAXITEM));
-            memcpy(newargv, seventhPreviousnewargv, MAXITEM);
-            oldsize = argvwordCount[7];
-        }
-        else if(bangCounter == 8){
-            memcpy(myargv, eightPreviousargv, (STORAGE * MAXITEM));
-            memcpy(newargv, eightPreviousnewargv, MAXITEM);
-            oldsize = argvwordCount[8];
-        }
-        else if(bangCounter == 9){
-            memcpy(myargv, ninthPreviousargv, (STORAGE * MAXITEM));
-            memcpy(newargv, ninthPreviousnewargv, MAXITEM);
-            oldsize = argvwordCount[9];
-        }
-
-        else{
-            memcpy(myargv, onePreviousargv, (STORAGE * MAXITEM));
-            memcpy(newargv, onePreviousnewargv, MAXITEM);
-        }
-        bangCounter = 0;
-        return oldsize;
-    }
 
     newargv[newargvpointerPosition] = NULL;
 
@@ -684,4 +479,199 @@ int parse(){
 }
 
 void myhandler(){
+}
+
+
+int getwordfromArray(char *w){
+
+    // Store character from getchar() user stdin
+    int characterValue;
+
+    // counter for number of letters of word
+    int letterCounter = 0;
+
+    //pointer to the beginning of w always
+    char *p = w;
+
+    /* when done is inserted at the end of sentence, it gives infinite loo[p when it hits next line  */
+    // Gets leading character from STDIN
+    characterValue = getchar();
+
+    /* Base cases */
+    // Move forward until spaces are eliminated
+    while(characterValue == ' '){
+        characterValue = getchar();
+    }
+
+    // First Character is new-line then return 0
+    if (characterValue == '\n' ) {
+        *w = '\0';
+        return 0;
+    }
+
+    // First character is End Of File return -1
+    if (characterValue == EOF ) {
+        *w = '\0';
+        return -1;
+    }
+    /* added new */
+
+    // First character is a metacharacter. Checking for only single metacharacters.
+    // add to buffer, increment counter by 1 and return letter.
+    if(characterValue == '<' || characterValue == '|'  || characterValue == '&' ){//|| characterValue == '#'){
+        // Word is found, terminate with end of string
+        *w = characterValue;
+        *w++;
+        letterCounter++;
+        *w = '\0';
+        return letterCounter;
+    }
+
+
+
+    // First character is a metacharacter with possible longer metacharacter to be found.
+    // keeps adding metacharacter to buffer until it finds something else besides a metacharacter.
+    if( characterValue == '>' ){
+        *w = characterValue;
+        *w++;
+        letterCounter++;
+        characterValue = getchar();
+        if(characterValue == '&'){
+            *w = characterValue;
+            *w++;
+            letterCounter++;
+            *w = '\0';
+            return letterCounter;
+        }
+        else if(characterValue == '>'){
+            *w = characterValue;
+            *w++;
+            letterCounter++;
+            characterValue = getchar();
+            if(characterValue == '&'){
+                *w = characterValue;
+                *w++;
+                letterCounter++;
+                *w = '\0';
+                return letterCounter;
+            }
+        }
+
+        *w = '\0';
+        //need to add the characterValue it just got from stdin to be detected again since getchar() removes it from stdin
+        ungetc(characterValue, stdin);
+        return letterCounter;
+
+    }
+
+    // First character is a '\' grabs the next character and next few lines stores it into buffer
+    if(characterValue == '\\'){
+        characterValue = getchar();
+    }
+
+
+    //stores character to pointer
+    *w = characterValue;
+    //moves pointer ahead one
+    *w++;
+    //increments letterCounter by one
+    letterCounter++;
+
+    // Continues while loop until EOF is found
+    while( (characterValue = getchar()) != EOF ){
+
+        // Checks if space is found
+        if(characterValue == ' '){
+            // Word is found, terminate with end of string
+            *w = '\0';
+            // Check if word is "done" when space is detected
+            if( strcmp(p, "done") == 0){
+                return -1;
+            }
+            return letterCounter;
+        }
+
+        /* added new */
+
+        // Checks if single metacharacter is found. Similar to finding a space. We want to return the previous word
+        // and ungetc the metacharacter to be found again.
+        if(characterValue == '<' || characterValue == '|' || characterValue == '&'){ //|| characterValue == '#'){
+            // Word is found, terminate with end of string
+            *w = '\0';
+            //need to add 'back metacharacters' to be detected again since getchar() removes it from stdin
+            ungetc(characterValue, stdin);
+            return letterCounter;
+        }
+
+        // Checks if single metacharacter is found. Similar to finding a space. We want to return the previous word
+        // and ungetc the metacharacter to be found again and start to search for longest possible metacharacter above
+        if(characterValue == '>' ){
+            // Word is found, terminate with end of string
+            *w = '\0';
+
+            //need to add '>' to be detected again since getchar() removes it from stdin
+            ungetc('>', stdin);
+            return letterCounter;
+        }
+
+        // Check if new line is found then insert new line again
+        if(characterValue == '\n'){
+
+            // Word is found, terminate with end of string
+            *w = '\0';
+            // Check if word is "done"
+            if( strcmp(p, "done") == 0){
+                ungetc('\n', stdin);
+                return -1;
+            }
+            //need to add 'New Line' to be detected again since getchar() removes it from stdin
+            ungetc('\n', stdin);
+            return letterCounter;
+        }
+
+        // checks for '\' and grabs the next character in order to add to buffer
+        if(characterValue == '\\'){
+            characterValue = getchar();
+        }
+
+        //Next code will check if it is a '\n' in order to add it to the buffer or not.
+        if( characterValue != '\n'){
+            //stores character to pointer
+            *w = characterValue;
+            //moves pointer ahead one
+            *w++;
+            //increments letterCounter by one
+            letterCounter++;
+
+
+        }
+            // if it is '\n' then put it back to be found again
+        else{
+            // Need to add 'New Line' to be detected again since getchar() removes it from stdin
+            ungetc('\n', stdin);
+        }
+
+        // Checks if buffer is filled. If it is, then we return the word and keep reading in stdin
+        if(letterCounter >= 254){
+            return letterCounter;
+        }
+
+    }
+
+    // Sets end of string since it is out of while loop and might still have word in buffer for next few checks
+    *w = '\0';
+
+    // Checks if word is "done", if last character is the EOF signal since got out of while loop above
+    if( strcmp(p, "done") == 0){
+        return -1;
+    }
+
+    // Check for left over word. If there is, then returns that word and will e xit on above Base cases
+    if(letterCounter != 0){
+        return letterCounter;
+    }
+
+
+    // Return -1 if there is no words left in buffer
+    return -1;
 }
