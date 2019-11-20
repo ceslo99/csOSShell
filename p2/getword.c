@@ -21,7 +21,6 @@
  * char *w: is the pointer the beginning of a char array of size 255
  * */
 int getword(char *w){
-    printf("1------\n");
     // Store character from getchar() user stdin
     int characterValue;
 
@@ -117,7 +116,6 @@ int getword(char *w){
 
     // Continues while loop until EOF is found
     while( (characterValue = getchar()) != EOF ){
-        printf("%c\n",characterValue);
         // Checks if space is found
         if(characterValue == ' '){
             // Word is found, terminate with end of string
@@ -213,3 +211,4 @@ int getword(char *w){
     // Return -1 if there is no words left in buffer
     return -1;
 }
+
