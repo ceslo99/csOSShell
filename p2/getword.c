@@ -21,7 +21,7 @@
  * char *w: is the pointer the beginning of a char array of size 255
  * */
 int getword(char *w){
-
+    printf("1------\n");
     // Store character from getchar() user stdin
     int characterValue;
 
@@ -52,11 +52,11 @@ int getword(char *w){
         *w = '\0';
         return -1;
     }
-    // added new 
+    /* added new */
 
     // First character is a metacharacter. Checking for only single metacharacters.
     // add to buffer, increment counter by 1 and return letter.
-    if(characterValue == '<' || characterValue == '|' || characterValue == '#' || characterValue == '&' ){
+    if(characterValue == '<' || characterValue == '|'  || characterValue == '&' ){//|| characterValue == '#'){
         // Word is found, terminate with end of string
         *w = characterValue;
         *w++;
@@ -64,6 +64,7 @@ int getword(char *w){
         *w = '\0';
         return letterCounter;
     }
+
 
 
     // First character is a metacharacter with possible longer metacharacter to be found.
@@ -106,6 +107,7 @@ int getword(char *w){
         characterValue = getchar();
     }
 
+
     //stores character to pointer
     *w = characterValue;
     //moves pointer ahead one
@@ -115,7 +117,7 @@ int getword(char *w){
 
     // Continues while loop until EOF is found
     while( (characterValue = getchar()) != EOF ){
-
+        printf("%c\n",characterValue);
         // Checks if space is found
         if(characterValue == ' '){
             // Word is found, terminate with end of string
@@ -127,11 +129,11 @@ int getword(char *w){
             return letterCounter;
         }
 
-        // added new 
+        /* added new */
 
         // Checks if single metacharacter is found. Similar to finding a space. We want to return the previous word
         // and ungetc the metacharacter to be found again.
-        if(characterValue == '<' || characterValue == '|' || characterValue == '#' || characterValue == '&' ){
+        if(characterValue == '<' || characterValue == '|' || characterValue == '&'){ //|| characterValue == '#'){
             // Word is found, terminate with end of string
             *w = '\0';
             //need to add 'back metacharacters' to be detected again since getchar() removes it from stdin
@@ -152,10 +154,12 @@ int getword(char *w){
 
         // Check if new line is found then insert new line again
         if(characterValue == '\n'){
+
             // Word is found, terminate with end of string
             *w = '\0';
             // Check if word is "done"
             if( strcmp(p, "done") == 0){
+                ungetc('\n', stdin);
                 return -1;
             }
             //need to add 'New Line' to be detected again since getchar() removes it from stdin
