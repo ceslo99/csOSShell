@@ -44,7 +44,7 @@ int fourthwordcounter = 0;
 int fifthwordcounter = 0;
 int sixthwordcounter = 0;
 int seventhwordcounter = 0;
-int eightwordcounter = 0;
+int eighthwordcounter = 0;
 int ninthwordcounter = 0;
 
 
@@ -399,8 +399,27 @@ int parse(){
         }
             //allows to continue future words
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
-           // bangFlag++;
-            continue;
+            myargv[argvpointerPosition + c] = '\0';
+            saveHistory(commandCounterArray, 1 );
+            commandCounterArray--;
+            if(commandCounterArray == 1)
+                return historyparse(oneargv, onewordcounter);
+            else if(commandCounterArray == 2)
+                return historyparse(twoargv, twowordcounter);
+            else if(commandCounterArray == 3)
+                return historyparse(thirdargv, thirdwordcounter);
+            else if(commandCounterArray == 4)
+                return historyparse(fourthargv, fourthwordcounter);
+            else if(commandCounterArray == 5)
+                return historyparse(fifthargv, fifthwordcounter);
+            else if(commandCounterArray == 6)
+                return historyparse(sixthargv, sixthwordcounter);
+            else if(commandCounterArray == 7)
+                return historyparse(seventhargv, seventhwordcounter);
+            else if(commandCounterArray == 8)
+                return historyparse(eighthargv, eighthwordcounter);
+            else if(commandCounterArray == 9)
+                return historyparse(ninthargv, ninthwordcounter);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!1" ) == 0 )){
             //bangFlag++;
@@ -455,7 +474,7 @@ int parse(){
             myargv[argvpointerPosition + c] = '\0';
             saveHistory(commandCounterArray, 1 );
             commandCounterArray--;
-            return historyparse(eighthargv, eightwordcounter);
+            return historyparse(eighthargv, eighthwordcounter);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!9" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
@@ -571,7 +590,7 @@ void saveHistory(int commandcounter, int wordcount){
     }
     if(k == 7 ){
         memcpy(eighthargv, myargv, (STORAGE * MAXITEM));
-        eightwordcounter = wordcount;
+        eighthwordcounter = wordcount;
     }
     if(k == 8 ){
         memcpy(ninthargv, myargv, (STORAGE * MAXITEM));
@@ -580,7 +599,6 @@ void saveHistory(int commandcounter, int wordcount){
     commandCounterArray++;
 
 }
-
 int historyparse(char numberargv[STORAGE * MAXITEM], int wordc){
     int i = 0;
     int nullcounter = 0;
