@@ -47,7 +47,6 @@ int seventhwordcounter = 0;
 int eighthwordcounter = 0;
 int ninthwordcounter = 0;
 
-
 char *outputPointer; // Pointer to beginning of file '>'
 char *inputPointer; // Pointer to beginning of file '<'
 int doneFlag =0; // If user types done at the beginning of input
@@ -58,7 +57,6 @@ int bangFlag = 0; // Found !! at the beginning of input
 int child = 0; // Used to save forked process PID
 int pid = 0 ; // Used to save wait return value
 
-
 int file; // Save file if given in argument
 int commandCounter = 1;
 int commandCounterArray = 0;
@@ -68,7 +66,6 @@ int bangCounter = 0;
 int appenddiagnosticFlag = 0;
 int argvFlag = 0;
 int poundFlag = 0;
-
 
 /*
  * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
@@ -109,7 +106,6 @@ int main(int argc, char *argv[] )
         {
             argvFlag++;
             dup2(file,STDIN_FILENO);
-
         }
     }
     for(;;) { // Will break if there is a done or EOF signal
@@ -131,18 +127,14 @@ int main(int argc, char *argv[] )
          * saves every char in onepreviousargv
          * */
 
-
         if (wordCount == -1 || doneFlag) { // Done is seen in myargv first position then quit program
             break;
         }
-
         if(wordCount == 0){ // Will re issue the user prompt to type again
             continue;
         }
-
         saveHistory(commandCounterArray, wordCount);
         commandCounter++;
-
         /* Checks if last char in newargv is '&' to run process in the background.
          * in order to pass future cases must decrement wordcount and update backgroundFlag
          * */
@@ -152,7 +144,6 @@ int main(int argc, char *argv[] )
             newargv[wordCount -1] = NULL; //remove ampersand and put a null there
             wordCount--;
         }
-
         /*
          * Checks for all possible cases of CD
          * First checks if user just types cd and takes to home directory
@@ -160,13 +151,11 @@ int main(int argc, char *argv[] )
          * Last checks if to many paths given
          * if cd is not given then fork!
          * */
-
         if(strcmp(newargv[0],"cd") == 0  && wordCount == 1){
 
             chdir(getenv("HOME"));
             continue;
         }
-
         else if(strcmp(newargv[0],"cd") == 0  && wordCount == 2){
             if( chdir(newargv[1]) == -1){ //changes directory in this line but if -1 then report error.
                 perror("No folder in current directory.\n");
@@ -176,9 +165,7 @@ int main(int argc, char *argv[] )
                 continue;
             }
         }
-
         else if(strcmp(newargv[0],"cd") == 0  && wordCount > 2){
-
             perror("To many parameters for cd.\n");
             continue;
         }
@@ -188,7 +175,6 @@ int main(int argc, char *argv[] )
          * If to many parameters, pointed to a NULL file or already exist, don't overwrite
          * open files for both input and output if nothing fails
          * */
-
         //// check '>' , '<' error
         // if to many directional arguments, error and continue
         if(greaterThanFlag > 1 || lessThanFlag > 1 || appendFlag > 1 ||
@@ -196,7 +182,6 @@ int main(int argc, char *argv[] )
             fprintf(stderr,"Too many redirectories.\n");
             continue;
         }
-
 
         //// check '>'
         if(greaterThanFlag == 1 && diagnosticFlag == 0 && appenddiagnosticFlag == 0){
@@ -225,7 +210,6 @@ int main(int argc, char *argv[] )
                 continue;
             }
         }
-
 
         //// check '<'
         if(lessThanFlag == 1){
@@ -268,13 +252,10 @@ int main(int argc, char *argv[] )
             }
         }
 
-
         //// fork code
         fflush(stdout);
         fflush(stderr);
-
         child = fork();
-
 
         if(child < 0){
             printf("Fork was unsucessful\n");
@@ -290,7 +271,6 @@ int main(int argc, char *argv[] )
                 dup2(devnull,STDIN_FILENO);
                 close(devnull);
             }
-
             //// ">" code
             if(greaterThanFlag != 0 && diagnosticFlag == 0){
                 dup2(outFile,STDOUT_FILENO);
@@ -323,7 +303,6 @@ int main(int argc, char *argv[] )
                 fprintf(stderr, "%s Command not found. \n",newargv[0]);
                 exit(9);
             }
-
         }
         // place in background and set STDIN set to/dev/null when & is present
         if(backgroundFlag !=0){
@@ -332,24 +311,18 @@ int main(int argc, char *argv[] )
             continue;
         }
         else{
-
             for(;;){
-
                 pid = wait(NULL);
-
                 if(pid == child){
                     break;
                 }
             }
         }
-
     }
-
     killpg(getpgrp(), SIGTERM);
     if(argvFlag == 0){
         printf("p2 terminated.\n");
     }
-
     exit(0);
 }
 
@@ -359,7 +332,6 @@ int main(int argc, char *argv[] )
 *  used to put user input in myarvg and newargv
 */
 int parse(){
-
     int size = 0;
     int argvpointerPosition = 0;
     int newargvpointerPosition = 0;
@@ -367,11 +339,8 @@ int parse(){
     poundFlag = 0;
     outputPointer = NULL;
     inputPointer = NULL;
-
-
     greaterThanFlag = 0;
     lessThanFlag = 0;
-
 
     // While loop will keep getting word until there is none left, returns 0
     while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
@@ -386,13 +355,10 @@ int parse(){
             poundFlag++;
             continue;
         }
-
         if(c == -1 && size == 0){ // Done returns -1 and check if that is the first word
-
             doneFlag = 1;
             return size;
         }
-
             // Condition if done is in the middle of sentence continue
         else if(c == -1 && strcmp(&myargv[argvpointerPosition], "done" ) == 0){
             c = 4;
@@ -427,14 +393,8 @@ int parse(){
             saveHistory(commandCounterArray, 1 );
             commandCounterArray--;
             return historyparse(oneargv, onewordcounter);
-
-
-            continue;
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!2" ) == 0 )){
-//            bangFlag++;
-//            bangCounter = 1;
-//            continue;
             myargv[argvpointerPosition + c] = '\0';
             saveHistory(commandCounterArray, 1 );
             commandCounterArray--;
@@ -442,7 +402,7 @@ int parse(){
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!3" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 2 );
+            saveHistory(commandCounterArray, 1 );
             commandCounterArray--;
             return historyparse(thirdargv, thirdwordcounter);
         }
@@ -482,10 +442,7 @@ int parse(){
             commandCounterArray--;
             return historyparse(ninthargv, ninthwordcounter);
         }
-
-
         else if(c == -1){ // eof found
-
             break;
         }
 
@@ -507,7 +464,6 @@ int parse(){
             inputPointer = myargv + argvpointerPosition+2;
 
         }
-
         else if(c == 2 && strcmp(&myargv[argvpointerPosition], ">&") == 0 ){
             diagnosticFlag++;
             greaterThanFlag++;
@@ -537,8 +493,6 @@ int parse(){
         if(simpleboolean > 0){
             simpleboolean--;
         }
-
-
     }
 
     newargv[newargvpointerPosition] = NULL;
@@ -551,11 +505,6 @@ int parse(){
     }
     return size;
 }
-
-void myhandler(){
-}
-
-
 
 void saveHistory(int commandcounter, int wordcount){
     int k = commandcounter%10;
@@ -597,33 +546,26 @@ void saveHistory(int commandcounter, int wordcount){
         ninthwordcounter = wordcount;
     }
     commandCounterArray++;
-
 }
 int historyparse(char numberargv[STORAGE * MAXITEM], int wordc){
-    int i = 0;
     int nullcounter = 0;
     int lettercounter = 0;
 
-
     while(nullcounter < wordc){
-        if(numberargv[i] == '\0'){
+        if(numberargv[lettercounter] == '\0'){
             nullcounter++;
         }
-
         lettercounter++;
-        i++;
     }
     fflush(stdin);
-    ungetc('\n', stdin);
+    ungetc(' ', stdin);
     while(lettercounter >= 0){
         if(numberargv[lettercounter] == '\0'){
             ungetc(' ', stdin);
         }
         else{
             ungetc(numberargv[lettercounter], stdin);
-
         }
-
         lettercounter--;
     }
 
@@ -631,4 +573,5 @@ int historyparse(char numberargv[STORAGE * MAXITEM], int wordc){
 
 }
 
-
+void myhandler(){
+}
