@@ -18,14 +18,18 @@
  * */
 
 #include "p2.h"
-void saveHistory(int commandcounter, int wordcount);
-int historyparse(char numberargv[STORAGE * MAXITEM], int wordc);
 
+struct history{
+    char pastargv[STORAGE * MAXITEM];
+    int onewordcounter;
+};
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
 int oldsize = -1; // keep track of previous number of words in argv
 
 char myargv[STORAGE * MAXITEM]; // Stores user current input
 char *newargv[MAXITEM]; // Pointer to beginning of each word.
+
+struct history historyarg[10];
 
 char oneargv[STORAGE * MAXITEM];
 char twoargv[STORAGE * MAXITEM];
