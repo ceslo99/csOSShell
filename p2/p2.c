@@ -21,7 +21,7 @@
 
 struct history{
     char pastargv[STORAGE * MAXITEM];
-    int onewordcounter;
+    int wordcounter;
 };
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
 int oldsize = -1; // keep track of previous number of words in argv
@@ -29,27 +29,7 @@ int oldsize = -1; // keep track of previous number of words in argv
 char myargv[STORAGE * MAXITEM]; // Stores user current input
 char *newargv[MAXITEM]; // Pointer to beginning of each word.
 
-struct history historyarg[10];
-
-char oneargv[STORAGE * MAXITEM];
-char twoargv[STORAGE * MAXITEM];
-char thirdargv[STORAGE * MAXITEM];
-char fourthargv[STORAGE * MAXITEM];
-char fifthargv[STORAGE * MAXITEM];
-char sixthargv[STORAGE * MAXITEM];
-char seventhargv[STORAGE * MAXITEM];
-char eighthargv[STORAGE * MAXITEM];
-char ninthargv[STORAGE * MAXITEM];
-
-int onewordcounter = 0;
-int twowordcounter = 0;
-int thirdwordcounter = 0;
-int fourthwordcounter = 0;
-int fifthwordcounter = 0;
-int sixthwordcounter = 0;
-int seventhwordcounter = 0;
-int eighthwordcounter = 0;
-int ninthwordcounter = 0;
+struct history historyarg[9];
 
 char *outputPointer; // Pointer to beginning of file '>'
 char *inputPointer; // Pointer to beginning of file '<'
@@ -63,7 +43,7 @@ int pid = 0 ; // Used to save wait return value
 
 int file; // Save file if given in argument
 int commandCounter = 1;
-int commandCounterArray = 0;
+int commandcountertemp = 0;
 
 int appendFlag = 0;
 int bangCounter = 0;
@@ -85,7 +65,6 @@ int poundFlag = 0;
 
 int main(int argc, char *argv[] )
 {
-
     int devnull; // Saves open dev/null
     int flags = 0; // Flags for open, create, read ,write
     int mode = 0; // Mode of open files
@@ -118,6 +97,7 @@ int main(int argc, char *argv[] )
         appenddiagnosticFlag = 0;
         appendFlag = 0;
         backgroundFlag = 0;
+        commandcountertemp = ((commandCounter-1)%9);
         if(argvFlag == 0){
             printf("%%%d%% ",commandCounter); // For user prompt
         }
@@ -137,7 +117,8 @@ int main(int argc, char *argv[] )
         if(wordCount == 0){ // Will re issue the user prompt to type again
             continue;
         }
-        saveHistory(commandCounterArray, wordCount);
+        fflush(stdin);
+        saveHistory(commandcountertemp, wordCount);
         commandCounter++;
         /* Checks if last char in newargv is '&' to run process in the background.
          * in order to pass future cases must decrement wordcount and update backgroundFlag
@@ -349,10 +330,7 @@ int parse(){
     // While loop will keep getting word until there is none left, returns 0
     while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
         //if bang bang found then we want to use old newargv so just continue
-        if(bangFlag != 0){
-            continue;
-        }
-        if(poundFlag != 0){
+        if(bangFlag != 0 || poundFlag != 0 ){
             continue;
         }
         if( c == 1 && argvFlag != 0 && myargv[argvpointerPosition] == '#' ){
@@ -370,81 +348,53 @@ int parse(){
             //allows to continue future words
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            if(commandCounterArray == 1)
-                return historyparse(oneargv, onewordcounter);
-            else if(commandCounterArray == 2)
-                return historyparse(twoargv, twowordcounter);
-            else if(commandCounterArray == 3)
-                return historyparse(thirdargv, thirdwordcounter);
-            else if(commandCounterArray == 4)
-                return historyparse(fourthargv, fourthwordcounter);
-            else if(commandCounterArray == 5)
-                return historyparse(fifthargv, fifthwordcounter);
-            else if(commandCounterArray == 6)
-                return historyparse(sixthargv, sixthwordcounter);
-            else if(commandCounterArray == 7)
-                return historyparse(seventhargv, seventhwordcounter);
-            else if(commandCounterArray == 8)
-                return historyparse(eighthargv, eighthwordcounter);
-            else if(commandCounterArray == 9)
-                return historyparse(ninthargv, ninthwordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(commandcountertemp-1);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!1" ) == 0 )){
-            //bangFlag++;
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(oneargv, onewordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(0);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!2" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(twoargv, twowordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(1);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!3" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(thirdargv, thirdwordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(2);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!4" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(fourthargv, fourthwordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(3);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!5" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(fifthargv, fifthwordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(4);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!6" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(sixthargv, sixthwordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(5);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!7" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(seventhargv, seventhwordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(6);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!8" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(eighthargv, eighthwordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(7);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!9" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandCounterArray, 1 );
-            commandCounterArray--;
-            return historyparse(ninthargv, ninthwordcounter);
+            saveHistory(commandcountertemp, 1 );
+            return historyparse(8);
         }
         else if(c == -1){ // eof found
             break;
@@ -466,21 +416,18 @@ int parse(){
             lessThanFlag++;
             simpleboolean = 2;
             inputPointer = myargv + argvpointerPosition+2;
-
         }
         else if(c == 2 && strcmp(&myargv[argvpointerPosition], ">&") == 0 ){
             diagnosticFlag++;
             greaterThanFlag++;
             simpleboolean = 2;
             outputPointer = myargv + argvpointerPosition +3;
-
         }
         else if(c == 3 && strcmp(&myargv[argvpointerPosition], ">>&") == 0 ){
             appenddiagnosticFlag++;
             greaterThanFlag++;
             simpleboolean = 2;
             outputPointer = myargv + argvpointerPosition +4;
-
         }
             // Will skip this round if above statement is true
             // Points word of myargv into newargv. Adds end of string in myargv of position plus c.
@@ -500,7 +447,6 @@ int parse(){
     }
 
     newargv[newargvpointerPosition] = NULL;
-
     oldsize = size; // stores old size before returning
     if(outputPointer != NULL){ // issue where it was ampersand was being saved as output file
         if(strcmp(outputPointer,"&") == 0){
@@ -511,52 +457,16 @@ int parse(){
 }
 
 void saveHistory(int commandcounter, int wordcount){
-    int k = commandcounter%10;
-
-    if(k == 0 ){
-        memcpy(oneargv, myargv, (STORAGE * MAXITEM));
-        onewordcounter = wordcount;
-    }
-    if(k == 1 ){
-        memcpy( twoargv, myargv, (STORAGE * MAXITEM));
-        twowordcounter = wordcount;
-    }
-    if(k == 2 ){
-        memcpy(thirdargv, myargv, (STORAGE * MAXITEM));
-        thirdwordcounter = wordcount;
-    }
-    if(k == 3 ){
-        memcpy(fourthargv, myargv, (STORAGE * MAXITEM));
-        fourthwordcounter = wordcount;
-    }
-    if(k == 4 ){
-        memcpy(fifthargv, myargv, (STORAGE * MAXITEM));
-        fifthwordcounter = wordcount;
-    }
-    if(k == 5 ){
-        memcpy(sixthargv, myargv, (STORAGE * MAXITEM));
-        sixthwordcounter = wordcount;
-    }
-    if(k == 6 ){
-        memcpy(seventhargv, myargv, (STORAGE * MAXITEM));
-        seventhwordcounter = wordcount;
-    }
-    if(k == 7 ){
-        memcpy(eighthargv, myargv, (STORAGE * MAXITEM));
-        eighthwordcounter = wordcount;
-    }
-    if(k == 8 ){
-        memcpy(ninthargv, myargv, (STORAGE * MAXITEM));
-        ninthwordcounter = wordcount;
-    }
-    commandCounterArray++;
+    memcpy(historyarg[commandcounter].pastargv, myargv, (STORAGE * MAXITEM));
+    historyarg[commandcounter].wordcounter = wordcount;
 }
-int historyparse(char numberargv[STORAGE * MAXITEM], int wordc){
+
+int historyparse(int numberargv){
     int nullcounter = 0;
     int lettercounter = 0;
 
-    while(nullcounter < wordc){
-        if(numberargv[lettercounter] == '\0'){
+    while(nullcounter < historyarg[numberargv].wordcounter){
+        if(historyarg[numberargv].pastargv[lettercounter] == '\0'){
             nullcounter++;
         }
         lettercounter++;
@@ -564,17 +474,15 @@ int historyparse(char numberargv[STORAGE * MAXITEM], int wordc){
     fflush(stdin);
     ungetc(' ', stdin);
     while(lettercounter >= 0){
-        if(numberargv[lettercounter] == '\0'){
+        if(historyarg[numberargv].pastargv[lettercounter] == '\0'){
             ungetc(' ', stdin);
         }
         else{
-            ungetc(numberargv[lettercounter], stdin);
+            ungetc(historyarg[numberargv].pastargv[lettercounter], stdin);
         }
         lettercounter--;
     }
-
     return parse();
-
 }
 
 void myhandler(){
