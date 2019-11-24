@@ -22,6 +22,7 @@
 struct history{
     char pastargv[STORAGE * MAXITEM];
     int wordcounter;
+    char lastw[MAXITEM];
 };
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
 int oldsize = -1; // keep track of previous number of words in argv
@@ -345,7 +346,15 @@ int parse(){
         else if(c == -1 && strcmp(&myargv[argvpointerPosition], "done" ) == 0){
             c = 4;
         }
-            //allows to continue future words
+        else if(c == 2 && (strcmp( &myargv[argvpointerPosition], "!$" ) == 0 )){
+            c = strlen(historyarg[commandcountertemp-1].lastw);
+            int x = 0;
+            for(x = 0; x < c; x++){
+                myargv[argvpointerPosition +x] = historyarg[commandcountertemp-1].lastw[x];
+            }
+            myargv[argvpointerPosition +x] = '\0';
+            printf("*%s : %d\n",&myargv[argvpointerPosition],c);
+        }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
             saveHistory(commandcountertemp, 1 );
@@ -459,6 +468,21 @@ int parse(){
 void saveHistory(int commandcounter, int wordcount){
     memcpy(historyarg[commandcounter].pastargv, myargv, (STORAGE * MAXITEM));
     historyarg[commandcounter].wordcounter = wordcount;
+    int index = 0;
+    int nullcounter = 0;
+    while(nullcounter != (wordcount-1) ){
+        if(historyarg[commandcounter].pastargv[index] == '\0'){
+            nullcounter++;
+        }
+        index++;
+    }
+    int i =0;
+    while(historyarg[commandcounter].pastargv[index] != '\0'){
+        historyarg[commandcounter].lastw[i] = historyarg[commandcounter].pastargv[index];
+        index++;
+        i++;
+    }
+    historyarg[commandcounter].lastw[i] = '\0';
 }
 
 int historyparse(int numberargv){
