@@ -19,18 +19,19 @@
 
 #include "p2.h"
 
+// Holds all past history, along with the history word counter and its last word
 struct history{
     char pastargv[STORAGE * MAXITEM];
     int wordcounter;
     char lastw[MAXITEM];
 };
+struct history historyarg[9]; //initilize nine past history
+
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
 int oldsize = -1; // keep track of previous number of words in argv
 
 char myargv[STORAGE * MAXITEM]; // Stores user current input
 char *newargv[MAXITEM]; // Pointer to beginning of each word.
-
-struct history historyarg[9];
 
 char *outputPointer; // Pointer to beginning of file '>'
 char *inputPointer; // Pointer to beginning of file '<'
@@ -43,14 +44,14 @@ int child = 0; // Used to save forked process PID
 int pid = 0 ; // Used to save wait return value
 
 int file; // Save file if given in argument
-int commandCounter = 1;
-int commandcountertemp = 0;
+int commandCounter = 1; // Keeps track of the commands entered
+int commandcountertemp = 0; // Used to make sure gives correct past history when needed
 
-int appendFlag = 0;
+int appendFlag = 0; // determines if there is a file that needs to be appended
 int bangCounter = 0;
-int appenddiagnosticFlag = 0;
-int argvFlag = 0;
-int poundFlag = 0;
+int appenddiagnosticFlag = 0; // determines if there is a file that needs to be appended >>&
+int argvFlag = 0; // determines if a file is in sent through argv
+int poundFlag = 0; // checks if there is a comment in command
 
 /*
  * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
@@ -64,8 +65,7 @@ int poundFlag = 0;
  * Also, handled redirectories >, < and background processes.
  * */
 
-int main(int argc, char *argv[] )
-{
+int main(int argc, char *argv[] ){
     int devnull; // Saves open dev/null
     int flags = 0; // Flags for open, create, read ,write
     int mode = 0; // Mode of open files
@@ -79,7 +79,6 @@ int main(int argc, char *argv[] )
      * Checks if there is something in argv
      * tries to open the file and if successful dup2 to replace stdin for file
      * */
-
     if(argc > 1){
         file = open( argv[1], O_RDONLY );
         if ( file < 0 )// If file doesn't exist
@@ -111,20 +110,20 @@ int main(int argc, char *argv[] )
          * we do this since  normally it would stop the loop after it finds the first '\0'
          * saves every char in onepreviousargv
          * */
-
         if (wordCount == -1 || doneFlag) { // Done is seen in myargv first position then quit program
             break;
         }
         if(wordCount == 0){ // Will re issue the user prompt to type again
             continue;
         }
+
         fflush(stdin);
         saveHistory(commandcountertemp, wordCount);
         commandCounter++;
+
         /* Checks if last char in newargv is '&' to run process in the background.
          * in order to pass future cases must decrement wordcount and update backgroundFlag
          * */
-
         if( strcmp(newargv[wordCount-1],"&")  == 0){
             backgroundFlag++;
             newargv[wordCount -1] = NULL; //remove ampersand and put a null there
@@ -138,7 +137,6 @@ int main(int argc, char *argv[] )
          * if cd is not given then fork!
          * */
         if(strcmp(newargv[0],"cd") == 0  && wordCount == 1){
-
             chdir(getenv("HOME"));
             continue;
         }
@@ -267,7 +265,6 @@ int main(int argc, char *argv[] )
                 dup2(outFile,STDOUT_FILENO);
                 close(outFile);
             }
-
             //// "<" code
             if(lessThanFlag != 0){
                 dup2(inFile,STDIN_FILENO);
@@ -305,6 +302,7 @@ int main(int argc, char *argv[] )
             }
         }
     }
+
     killpg(getpgrp(), SIGTERM);
     if(argvFlag == 0){
         printf("p2 terminated.\n");
@@ -319,9 +317,9 @@ int main(int argc, char *argv[] )
 */
 int parse(){
     int size = 0;
-    int argvpointerPosition = 0;
-    int newargvpointerPosition = 0;
-    int simpleboolean = 0;
+    int argvpointerPosition = 0; //moves the pointer from starting positon of array myargv
+    int newargvpointerPosition = 0; // pointer position of array of pointer
+    int simpleboolean = 0; // helps point to correct word
     poundFlag = 0;
     outputPointer = NULL;
     inputPointer = NULL;
@@ -338,12 +336,12 @@ int parse(){
             poundFlag++;
             continue;
         }
-        if(c == -1 && size == 0){ // Done returns -1 and check if that is the first word
+        if(c == -1 && size == 0) { // Done returns -1 and check if that is the first word
             doneFlag = 1;
             return size;
         }
-            // Condition if done is in the middle of sentence continue
         else if(c == -1 && strcmp(&myargv[argvpointerPosition], "done" ) == 0){
+            // Condition if done is in the middle of sentence continue
             c = 4;
         }
         else if(c == 2 && (strcmp( &myargv[argvpointerPosition], "!$" ) == 0 )){
@@ -353,58 +351,27 @@ int parse(){
                 myargv[argvpointerPosition +x] = historyarg[commandcountertemp-1].lastw[x];
             }
             myargv[argvpointerPosition +x] = '\0';
-            printf("*%s : %d\n",&myargv[argvpointerPosition],c);
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
             myargv[argvpointerPosition + c] = '\0';
             saveHistory(commandcountertemp, 1 );
             return historyparse(commandcountertemp-1);
         }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!1" ) == 0 )){
+        else if(size == 0 && (myargv[argvpointerPosition] == '!')
+                        && ( myargv[argvpointerPosition +1] == '0' ||
+                        myargv[argvpointerPosition +1] == '1' ||
+                        myargv[argvpointerPosition +1] == '2' ||
+                        myargv[argvpointerPosition +1] == '3' ||
+                        myargv[argvpointerPosition +1] == '4' ||
+                        myargv[argvpointerPosition +1] == '5' ||
+                        myargv[argvpointerPosition +1] == '6' ||
+                        myargv[argvpointerPosition +1] == '7' ||
+                        myargv[argvpointerPosition +1] == '8' ) ){
             myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(0);
+            saveHistory(commandcountertemp, 1);
+            return historyparse(((int)myargv[argvpointerPosition +1]) -49 );
         }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!2" ) == 0 )){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(1);
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!3" ) == 0 )){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(2);
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!4" ) == 0 )){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(3);
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!5" ) == 0 )){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(4);
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!6" ) == 0 )){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(5);
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!7" ) == 0 )){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(6);
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!8" ) == 0 )){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(7);
-        }
-        else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!9" ) == 0 )){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1 );
-            return historyparse(8);
-        }
+
         else if(c == -1){ // eof found
             break;
         }
