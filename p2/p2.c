@@ -50,7 +50,7 @@ int poundFlag = 0; // checks if there is a comment in command
 int childsection = 0;
 int pipeflag = 0;
 int fullwordcounter = 0;
-
+int backgroundFlag = 0; // & counter
 /*
  * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
  * checks for special conditions and will break when finds done is first word or EOF
@@ -68,7 +68,6 @@ int main(int argc, char *argv[] ){
     int mode = 0; // Mode of open files
     int outFile = 0; // Saves file that is open
     int inFile = 0; // Saves file that is open
-    int backgroundFlag = 0; // & counter
     int wordCount = 0; // Needed for number of words to be able to check conditions later
     setpgid(0,0);
 
@@ -123,14 +122,6 @@ int main(int argc, char *argv[] ){
                 pipeflag = 0;
                 continue;
             }
-        }
-        /* Checks if last char in newargv is '&' to run process in the background.
-         * in order to pass future cases must decrement wordcount and update backgroundFlag
-         * */
-        if( strcmp(newargv[wordCount-1],"&")  == 0){
-            backgroundFlag++;
-            newargv[wordCount -1] = NULL; //remove ampersand and put a null there
-            wordCount--;
         }
         /*
          * Checks for all possible cases of CD
@@ -452,6 +443,14 @@ int parse(){
     if(outputPointer != NULL){ // issue where it was ampersand was being saved as output file
         if(strcmp(outputPointer,"&") == 0){
             outputPointer = NULL;
+        }
+        /* Checks if last char in newargv is '&' to run process in the background.
+         * in order to pass future cases must decrement wordcount and update backgroundFlag
+         * */
+        if( strcmp(newargv[newargvpointerPosition-1],"&")  == 0){
+            backgroundFlag++;
+            newargv[newargvpointerPosition -1] = NULL; //remove ampersand and put a null there
+            size--;
         }
     }
     return size;
