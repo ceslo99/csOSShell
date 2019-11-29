@@ -2,7 +2,7 @@
 * Cesar Lopez
 * Professor Carroll
 * CS570
-* 10/9/2019
+* 11/29/2019
 *
 * GraderNotes:
 * I wrote this code myself and has no bugs
@@ -18,21 +18,18 @@
  * */
 
 #include "p2.h"
-
 // Holds all past history, along with the history word counter and its last word
 struct history{
     char pastargv[STORAGE * MAXITEM];
     int wordcounter;
     char lastw[MAXITEM];
 };
-struct history historyarg[9]; //initilize nine past history
 
+struct history historyarg[9]; //initilize nine past history
 int c; // Used in parse to hold the return value of getword.c which is the number of characters in the word
 int oldsize = -1; // keep track of previous number of words in argv
-
 char myargv[STORAGE * MAXITEM]; // Stores user current input
 char *newargv[MAXITEM]; // Pointer to beginning of each word.
-
 char *outputPointer; // Pointer to beginning of file '>'
 char *inputPointer; // Pointer to beginning of file '<'
 int doneFlag =0; // If user types done at the beginning of input
@@ -42,16 +39,17 @@ int diagnosticFlag = 0; // how many >& found
 int bangFlag = 0; // Found !! at the beginning of input
 int child = 0; // Used to save forked process PID
 int pid = 0 ; // Used to save wait return value
-
 int file; // Save file if given in argument
 int commandCounter = 1; // Keeps track of the commands entered
 int commandcountertemp = 0; // Used to make sure gives correct past history when needed
-
 int appendFlag = 0; // determines if there is a file that needs to be appended
 int bangCounter = 0;
 int appenddiagnosticFlag = 0; // determines if there is a file that needs to be appended >>&
 int argvFlag = 0; // determines if a file is in sent through argv
 int poundFlag = 0; // checks if there is a comment in command
+int childsection = 0;
+int pipeflag = 0;
+int fullwordcounter = 0;
 
 /*
  * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
@@ -64,7 +62,6 @@ int poundFlag = 0; // checks if there is a comment in command
  * inputs to many files.
  * Also, handled redirectories >, < and background processes.
  * */
-
 int main(int argc, char *argv[] ){
     int devnull; // Saves open dev/null
     int flags = 0; // Flags for open, create, read ,write
@@ -101,7 +98,6 @@ int main(int argc, char *argv[] ){
         if(argvFlag == 0){
             printf("%%%d%% ",commandCounter); // For user prompt
         }
-
         wordCount = parse(); // Parse will add each word into myargv to have access to it
 
         /*
@@ -118,9 +114,16 @@ int main(int argc, char *argv[] ){
         }
 
         fflush(stdin);
-        saveHistory(commandcountertemp, wordCount);
+        saveHistory(commandcountertemp, fullwordcounter);
         commandCounter++;
 
+
+        if(pipeflag != 0){
+            if( strcmp(newargv[childsection],"&")  == 0){
+                pipeflag = 0;
+                continue;
+            }
+        }
         /* Checks if last char in newargv is '&' to run process in the background.
          * in order to pass future cases must decrement wordcount and update backgroundFlag
          * */
@@ -140,7 +143,8 @@ int main(int argc, char *argv[] ){
             chdir(getenv("HOME"));
             continue;
         }
-        else if(strcmp(newargv[0],"cd") == 0  && wordCount == 2){
+        else if(strcmp(newargv[0],"cd") == 0  && (wordCount == 2 || poundFlag != 0)){
+
             if( chdir(newargv[1]) == -1){ //changes directory in this line but if -1 then report error.
                 perror("No folder in current directory.\n");
                 continue;
@@ -236,6 +240,12 @@ int main(int argc, char *argv[] ){
             }
         }
 
+        if(pipeflag == 1){
+            pipecode(inFile,outFile);
+            pipeflag = 0;
+            continue;
+        }
+
         //// fork code
         fflush(stdout);
         fflush(stderr);
@@ -301,12 +311,12 @@ int main(int argc, char *argv[] ){
                 }
             }
         }
+        poundFlag = 0;
     }
-
-    killpg(getpgrp(), SIGTERM);
     if(argvFlag == 0){
         printf("p2 terminated.\n");
     }
+    killpg(getpgrp(), SIGTERM);
     exit(0);
 }
 
@@ -320,11 +330,14 @@ int parse(){
     int argvpointerPosition = 0; //moves the pointer from starting positon of array myargv
     int newargvpointerPosition = 0; // pointer position of array of pointer
     int simpleboolean = 0; // helps point to correct word
+    int x = 0;
     poundFlag = 0;
     outputPointer = NULL;
     inputPointer = NULL;
     greaterThanFlag = 0;
     lessThanFlag = 0;
+    pipeflag = 0;
+    fullwordcounter = 0;
 
     // While loop will keep getting word until there is none left, returns 0
     while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
@@ -346,30 +359,37 @@ int parse(){
         }
         else if(c == 2 && (strcmp( &myargv[argvpointerPosition], "!$" ) == 0 )){
             c = strlen(historyarg[commandcountertemp-1].lastw);
-            int x = 0;
             for(x = 0; x < c; x++){
                 myargv[argvpointerPosition +x] = historyarg[commandcountertemp-1].lastw[x];
             }
-            myargv[argvpointerPosition +x] = '\0';
         }
         else if(size == 0 && (strcmp( &myargv[argvpointerPosition], "!!" ) == 0 )){
+            // adds null at the end and saves !! first before retrieving previous history
             myargv[argvpointerPosition + c] = '\0';
             saveHistory(commandcountertemp, 1 );
             return historyparse(commandcountertemp-1);
         }
         else if(size == 0 && (myargv[argvpointerPosition] == '!')
-                        && ( myargv[argvpointerPosition +1] == '0' ||
-                        myargv[argvpointerPosition +1] == '1' ||
-                        myargv[argvpointerPosition +1] == '2' ||
-                        myargv[argvpointerPosition +1] == '3' ||
-                        myargv[argvpointerPosition +1] == '4' ||
-                        myargv[argvpointerPosition +1] == '5' ||
-                        myargv[argvpointerPosition +1] == '6' ||
-                        myargv[argvpointerPosition +1] == '7' ||
-                        myargv[argvpointerPosition +1] == '8' ) ){
-            myargv[argvpointerPosition + c] = '\0';
-            saveHistory(commandcountertemp, 1);
-            return historyparse(((int)myargv[argvpointerPosition +1]) -49 );
+                && ( myargv[argvpointerPosition +1] == '0' ||
+                     myargv[argvpointerPosition +1] == '1' ||
+                     myargv[argvpointerPosition +1] == '2' ||
+                     myargv[argvpointerPosition +1] == '3' ||
+                     myargv[argvpointerPosition +1] == '4' ||
+                     myargv[argvpointerPosition +1] == '5' ||
+                     myargv[argvpointerPosition +1] == '6' ||
+                     myargv[argvpointerPosition +1] == '7' ||
+                     myargv[argvpointerPosition +1] == '8' ) ){
+            //check which number used and send in that number. It is given in ascii number so subtract -49 to convert
+            if( (((int) myargv[argvpointerPosition + 1]) - 49) < commandcountertemp) {
+                myargv[argvpointerPosition + c] = '\0';
+                saveHistory(commandcountertemp, 1);
+                return historyparse(((int) myargv[argvpointerPosition + 1]) - 49);
+            }
+            else{ // if not valid history
+                perror("History command not valid.\n");
+                break;
+            }
+
         }
 
         else if(c == -1){ // eof found
@@ -405,21 +425,26 @@ int parse(){
             simpleboolean = 2;
             outputPointer = myargv + argvpointerPosition +4;
         }
+        else if(c == 1 && myargv[argvpointerPosition] == '|' && strcmp(&myargv[0], "echo") != 0){
+            newargv[newargvpointerPosition++] = NULL;
+            childsection = newargvpointerPosition;
+            pipeflag++;
+        }
+        else if(simpleboolean < 1 ){
             // Will skip this round if above statement is true
             // Points word of myargv into newargv. Adds end of string in myargv of position plus c.
             // myargv will put next word after null terminal
             // arvpointer is c plus 1
             // Increment size of words counted
-        else if(simpleboolean < 1 ){
             newargv[newargvpointerPosition++] = myargv + argvpointerPosition;
             size++;
         }
-
         myargv[argvpointerPosition + c] = '\0';
         argvpointerPosition += c + 1;
         if(simpleboolean > 0){
             simpleboolean--;
         }
+        fullwordcounter++;
     }
 
     newargv[newargvpointerPosition] = NULL;
@@ -432,18 +457,21 @@ int parse(){
     return size;
 }
 
+// sends which line we are at along with current word counter. copies myargv to current array based off number
+// of command number which is the first two lines. Rest goes up to beginning of last word in order start saving
+// the last word into lastw
 void saveHistory(int commandcounter, int wordcount){
-    memcpy(historyarg[commandcounter].pastargv, myargv, (STORAGE * MAXITEM));
-    historyarg[commandcounter].wordcounter = wordcount;
     int index = 0;
     int nullcounter = 0;
+    int i =0;
+    memcpy(historyarg[commandcounter].pastargv, myargv, (STORAGE * MAXITEM));
+    historyarg[commandcounter].wordcounter = wordcount;
     while(nullcounter != (wordcount-1) ){
         if(historyarg[commandcounter].pastargv[index] == '\0'){
             nullcounter++;
         }
         index++;
     }
-    int i =0;
     while(historyarg[commandcounter].pastargv[index] != '\0'){
         historyarg[commandcounter].lastw[i] = historyarg[commandcounter].pastargv[index];
         index++;
@@ -452,10 +480,11 @@ void saveHistory(int commandcounter, int wordcount){
     historyarg[commandcounter].lastw[i] = '\0';
 }
 
+//Restores whatever index is given to function based of the past 10 history saved.
+// need to ungetc in order to put back in stdin but needs to do it backwards in order to be read correctly
 int historyparse(int numberargv){
     int nullcounter = 0;
     int lettercounter = 0;
-
     while(nullcounter < historyarg[numberargv].wordcounter){
         if(historyarg[numberargv].pastargv[lettercounter] == '\0'){
             nullcounter++;
@@ -474,6 +503,57 @@ int historyparse(int numberargv){
         lettercounter--;
     }
     return parse();
+}
+
+void pipecode(int inFile, int outFile){
+    int lchild;
+    int grandchild;
+    int filedes[2];
+    int p_id = 0;
+
+    fflush(stdout);
+    fflush(stderr);
+    lchild = fork();
+    if(lchild == 0){
+        pipe(filedes); // this creates pointers to write and read
+        fflush(stdout);
+        fflush(stderr);
+        grandchild = fork(); // fork to be in grandchild
+        if(grandchild == 0){
+            //// check '<'
+            if(lessThanFlag == 1){
+                dup2(inFile, STDIN_FILENO);
+                close(inFile);
+            }
+            dup2(filedes[1], STDOUT_FILENO);
+            close(filedes[0]);
+            close(filedes[1]);
+            if((execvp(*newargv, newargv)) < 0){ // this executes the command
+                fprintf(stderr, "%s Command not found. \n",newargv[0]);
+                exit(9);
+            }
+        }
+
+        //// check '>'
+        if(greaterThanFlag == 1 && diagnosticFlag == 0 && appenddiagnosticFlag == 0){
+            dup2(outFile,STDOUT_FILENO);
+            close(outFile);
+        }
+        dup2(filedes[0], STDIN_FILENO);
+        close(filedes[0]);
+        close(filedes[1]);
+        if((execvp(newargv[childsection], newargv+ childsection)) < 0){ // this executes the command
+            fprintf(stderr, "%s Command not found. \n",newargv[0]);
+            exit(9);
+        }
+    }
+
+    for (;;) {
+        p_id = wait(NULL);
+        if (p_id == lchild) { //when the equal that means child has finished
+            break;
+        }
+    }
 }
 
 void myhandler(){
