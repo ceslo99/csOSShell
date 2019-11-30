@@ -53,6 +53,7 @@ int childsection = 0; // grabs starting location of child side
 int fullwordcounter = 0; // counts all words regardless of metacharaters
 int backgroundFlag = 0; // & counter
 int backslash = 0; // checks if backslash was used
+int invamp = 0;
 
 /*
 * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
@@ -94,6 +95,7 @@ int main(int argc, char *argv[] )
         backgroundFlag = 0;
         appenddiagnosticFlag = 0;
         appendFlag = 0;
+        invamp =0;
         // allows for multiple history by resusing the nine structs initialized
         commandcountertemp = ((commandCounter-1)%9);
         if(argvFlag == 0){
@@ -105,15 +107,8 @@ int main(int argc, char *argv[] )
             break;
         }
 
-        if(wordCount == 0){ // Will re issue the user prompt to type again
+        if(wordCount == 0 || invamp != 0){ // Will re issue the user prompt to type again
             continue;
-        }
-        if(pipeflag != 0){
-            printf("heep\n");
-            if( strcmp(newargv[childsection],"&")  == 0){
-                pipeflag = 0;
-                continue;
-            }
         }
         // saves history in array of struct given which line was given
         fflush(stdin);
@@ -228,7 +223,6 @@ int main(int argc, char *argv[] )
             pipeflag = 0;
             continue;
         }
-
         //// fork code
         fflush(stdout);
         fflush(stderr);
@@ -250,7 +244,7 @@ int main(int argc, char *argv[] )
             }
 
             //// ">" code
-            if((greaterThanFlag != 0 && diagnosticFlag == 0) || (appendFlag != 0 && diagnosticFlag == 0)){
+            if((greaterThanFlag != 0 && diagnosticFlag == 0 && appenddiagnosticFlag ==0 ) || (appendFlag != 0 && diagnosticFlag == 0)){
                 dup2(outFile,STDOUT_FILENO);
                 close(outFile);
             }
@@ -440,6 +434,11 @@ int parse(){
         }
     }
 
+    if(pipeflag != 0){
+        if( strcmp(newargv[childsection],"&")  == 0){
+            invamp++;
+        }
+    }
     /* Checks if last char in newargv is '&' to run process in the background.
      * in order to pass future cases must decrement wordcount and update backgroundFlag
      * */
