@@ -48,9 +48,11 @@ int argvFlag = 0; // determines if a file is in sent through argv
 int appendFlag = 0; // determines if there is a file that needs to be appended
 int appenddiagnosticFlag = 0; // determines if there is a file that needs to be appended >>&
 int poundFlag = 0; // checks if there is a comment in command
-int pipeflag = 0;
-int childsection = 0;
-int fullwordcounter = 0;
+int pipeflag = 0; // checks if there is pipe
+int childsection = 0; // grabs starting location of child side
+int fullwordcounter = 0; // counts all words regardless of metacharaters
+int backgroundFlag = 0; // & counter
+int backslash = 0; // checks if backslash was used
 
 /*
 * first checks if there is anything in argv[1]. If there isn't anything then enters loop and calls parse.
@@ -64,7 +66,6 @@ int main(int argc, char *argv[] )
     int mode = 0; // Mode of open files
     int outFile = 0; // Saves file that is open
     int inFile = 0; // Saves file that is open
-    int backgroundFlag = 0; // & counter
     int wordCount = 0; // Needed for number of words to be able to check conditions later
     int k = 0; // needed for bang bang while loop
     int hit =0; // // need to \0 counter for bang bang while loop
@@ -75,7 +76,6 @@ int main(int argc, char *argv[] )
      * Checks if there is something in argv
      * tries to open the file and if successful dup2 to replace stdin for file
      * */
-
     if(argc > 1){
         file = open( argv[1], O_RDONLY );
         if ( file < 0 )// If file doesn't exist
@@ -94,12 +94,12 @@ int main(int argc, char *argv[] )
         backgroundFlag = 0;
         appenddiagnosticFlag = 0;
         appendFlag = 0;
+        // allows for multiple history by resusing the nine structs initialized
         commandcountertemp = ((commandCounter-1)%9);
         if(argvFlag == 0){
             printf("%%%d%% ",commandCounter); // For user prompt
         }
         wordCount = parse(); // Parse will add each word into myargv to have access to it
-
 
         if (wordCount == -1 || doneFlag) { // Done is seen in myargv first position then quit program
             break;
@@ -109,24 +109,16 @@ int main(int argc, char *argv[] )
             continue;
         }
         if(pipeflag != 0){
+            printf("heep\n");
             if( strcmp(newargv[childsection],"&")  == 0){
                 pipeflag = 0;
                 continue;
             }
         }
+        // saves history in array of struct given which line was given
         fflush(stdin);
         saveHistory(commandcountertemp, fullwordcounter);
         commandCounter++;
-
-        /* Checks if last char in newargv is '&' to run process in the background.
-         * in order to pass future cases must decrement wordcount and update backgroundFlag
-         * */
-
-        if( strcmp(newargv[wordCount-1],"&")  == 0){
-            backgroundFlag++;
-            newargv[wordCount -1] = NULL; //remove ampersand and put a null there
-            wordCount--;
-        }
 
         /*
          * Checks for all possible cases of CD
@@ -135,13 +127,11 @@ int main(int argc, char *argv[] )
          * Last checks if to many paths given
          * if cd is not given then fork!
          * */
-
         if(strcmp(newargv[0],"cd") == 0  && wordCount == 1){
 
             chdir(getenv("HOME"));
             continue;
         }
-
         else if(strcmp(newargv[0],"cd") == 0  && (wordCount == 2 || poundFlag != 0)){
             if( chdir(newargv[1]) == -1){ //changes directory in this line but if -1 then report error.
                 perror("No folder in current directory.\n");
@@ -151,7 +141,6 @@ int main(int argc, char *argv[] )
                 continue;
             }
         }
-
         else if(strcmp(newargv[0],"cd") == 0  && wordCount > 2){
             perror("To many parameters for cd.\n");
             continue;
@@ -162,7 +151,6 @@ int main(int argc, char *argv[] )
          * If to many parameters, pointed to a NULL file or already exist, don't overwrite
          * open files for both input and output if nothing fails
          * */
-
         //// check '>' , '<' error
         // if to many directional arguments, error and continue
         if(greaterThanFlag > 1 || lessThanFlag > 1 || appendFlag > 1 ||
@@ -170,10 +158,8 @@ int main(int argc, char *argv[] )
             fprintf(stderr,"Too many redirectories.\n");
             continue;
         }
-
-
         //// check '>'
-        if(greaterThanFlag == 1 && diagnosticFlag == 0){
+        if(greaterThanFlag == 1 && diagnosticFlag == 0 && appenddiagnosticFlag == 0){
             flags = O_CREAT | O_EXCL | O_RDWR ;
             mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
             if(outputPointer == NULL){ // if there is no file to point then error
@@ -185,7 +171,6 @@ int main(int argc, char *argv[] )
                 continue;
             }
         }
-
         //// check '>>'
         if(appendFlag == 1 && diagnosticFlag == 0){
             flags = O_APPEND | O_RDWR ;
@@ -199,7 +184,6 @@ int main(int argc, char *argv[] )
                 continue;
             }
         }
-
         //// check '<'
         if(lessThanFlag == 1){
             flags = O_RDONLY;
@@ -212,7 +196,6 @@ int main(int argc, char *argv[] )
                 continue;
             }
         }
-
         //// check '>&'
         if( diagnosticFlag != 0 ) {
             flags = O_CREAT | O_EXCL | O_RDWR ;
@@ -239,6 +222,7 @@ int main(int argc, char *argv[] )
                 continue;
             }
         }
+        // if there is a pipe will go to pipecode function where it is capable of doing special forking
         if(pipeflag == 1){
             pipecode(inFile,outFile);
             pipeflag = 0;
@@ -248,9 +232,7 @@ int main(int argc, char *argv[] )
         //// fork code
         fflush(stdout);
         fflush(stderr);
-
         child = fork();
-
 
         if(child < 0){
             printf("Fork was unsucessful\n");
@@ -272,13 +254,12 @@ int main(int argc, char *argv[] )
                 dup2(outFile,STDOUT_FILENO);
                 close(outFile);
             }
-
             //// "<" code
             if(lessThanFlag != 0){
                 dup2(inFile,STDIN_FILENO);
                 close(inFile);
             }
-            //// ">&"
+            //// ">&" //// ">>&"
             if(diagnosticFlag != 0 || appenddiagnosticFlag != 0){
                 dup2(outFile,STDOUT_FILENO);
                 dup2(outFile,STDERR_FILENO);
@@ -324,12 +305,12 @@ int main(int argc, char *argv[] )
 *  used to put user input in myarvg and newargv
 */
 int parse(){
-
     int size = 0;
     int argvpointerPosition = 0;
     int newargvpointerPosition = 0;
     int simpleboolean = 0;
     int x = 0;
+    backslash = 0;
     poundFlag = 0;
     pipeflag = 0;
     fullwordcounter = 0;
@@ -337,7 +318,6 @@ int parse(){
     inputPointer = NULL;
     greaterThanFlag = 0;
     lessThanFlag = 0;
-
 
     // While loop will keep getting word until there is none left, returns 0
     while(( c = getword(myargv + argvpointerPosition) ) != 0 ){
@@ -349,13 +329,11 @@ int parse(){
             poundFlag++;
             continue;
         }
-
         if(c == -1 && size == 0){ // Done returns -1 and check if that is the first word
 
             doneFlag = 1;
             return size;
         }
-
             // Condition if done is in the middle of sentence continue
         else if(c == -1 && strcmp(&myargv[argvpointerPosition], "done" ) == 0){
 
@@ -374,6 +352,8 @@ int parse(){
             saveHistory(commandcountertemp, 1 );
             return historyparse(commandcountertemp-1);
         }
+        // checks if given any of the nine history command
+        // saves current command and retrieves the the user is asking
         else if(size == 0 && (myargv[argvpointerPosition] == '!')
                 && ( myargv[argvpointerPosition +1] == '0' ||
                      myargv[argvpointerPosition +1] == '1' ||
@@ -394,10 +374,7 @@ int parse(){
                 perror("History command not valid.\n");
                 break;
             }
-
         }
-
-
         else if(c == -1){ // eof found
 
             break;
@@ -421,7 +398,6 @@ int parse(){
             inputPointer = myargv + argvpointerPosition+2;
 
         }
-
         else if(c == 2 && strcmp(&myargv[argvpointerPosition], ">&") == 0 ){
             diagnosticFlag++;
             greaterThanFlag++;
@@ -435,12 +411,11 @@ int parse(){
             simpleboolean = 2;
             outputPointer = myargv + argvpointerPosition +4;
         }
-        else if(c == 1 && myargv[argvpointerPosition] == '|' && strcmp(&myargv[0], "echo") != 0){
+        else if(c == 1 && myargv[argvpointerPosition] == '|' && backslash == 0 ){
             newargv[newargvpointerPosition++] = NULL;
             childsection = newargvpointerPosition;
             pipeflag++;
         }
-
             // Will skip this round if above statement is true
             // Points word of myargv into newargv. Adds end of string in myargv of position plus c.
             // myargv will put next word after null terminal
@@ -457,7 +432,6 @@ int parse(){
         }
         fullwordcounter++;
     }
-
     newargv[newargvpointerPosition] = NULL;
     oldsize = size; // stores old size before returning
     if(outputPointer != NULL){ // issue where it was ampersand was being saved as output file
@@ -466,6 +440,16 @@ int parse(){
         }
     }
 
+    /* Checks if last char in newargv is '&' to run process in the background.
+     * in order to pass future cases must decrement wordcount and update backgroundFlag
+     * */
+    if(size > 1){
+        if( strcmp(newargv[newargvpointerPosition-1],"&")  == 0){
+            backgroundFlag++;
+            newargv[newargvpointerPosition -1] = NULL; //remove ampersand and put a null there
+            size--;
+        }
+    }
     return size;
 }
 
@@ -517,6 +501,11 @@ int historyparse(int numberargv){
     return parse();
 }
 
+// first forks a child in order to fork again and create a grandchild.
+//make sure to fflush before forking
+//executes grandchild first then starts in childsection, where the word following the pipe was found
+//accounts for redirectories and diagnostics
+//waits for child only to finish not the grandchild
 void pipecode(int inFile, int outFile){
     int lchild;
     int grandchild;
@@ -526,12 +515,22 @@ void pipecode(int inFile, int outFile){
     fflush(stdout);
     fflush(stderr);
     lchild = fork();
-    if(lchild == 0){
+    //check for errors in forking
+    if(lchild < 0){
+        printf("Fork was unsucessful\n");
+        exit(1);
+    }
+    else if(lchild == 0){
         pipe(filedes); // this creates pointers to write and read
         fflush(stdout);
         fflush(stderr);
         grandchild = fork(); // fork to be in grandchild
-        if(grandchild == 0){
+        //checks for forking errors
+        if(grandchild < 0){
+            printf("Fork was unsucessful\n");
+            exit(1);
+        }
+        else if(grandchild == 0){
             //// check '<'
             if(lessThanFlag == 1){
                 dup2(inFile, STDIN_FILENO);
@@ -556,6 +555,13 @@ void pipecode(int inFile, int outFile){
             dup2(outFile,STDOUT_FILENO);
             close(outFile);
         }
+
+        //// ">&"
+        if(diagnosticFlag != 0 || appenddiagnosticFlag != 0){
+            dup2(outFile,STDOUT_FILENO);
+            dup2(outFile,STDERR_FILENO);
+            close(outFile);
+        }
         dup2(filedes[0], STDIN_FILENO);
         close(filedes[0]);
         close(filedes[1]);
@@ -564,11 +570,17 @@ void pipecode(int inFile, int outFile){
             exit(9);
         }
     }
-
-    for (;;) {
-        p_id = wait(NULL);
-        if (p_id == lchild) { //when the equal that means child has finished
-            break;
+// place in background and set STDIN set to/dev/null when & is present
+    if(backgroundFlag !=0){
+        printf("%s [%d]\n", *newargv , child);
+        backgroundFlag = 0;
+    }
+    else{
+        for (;;) {
+            p_id = wait(NULL);
+            if (p_id == lchild) { //when the equal that means child has finished
+                break;
+            }
         }
     }
 }
