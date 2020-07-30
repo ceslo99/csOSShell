@@ -14,7 +14,7 @@ or file passed in argv. Input will be handled by previous getword.c that is in t
 Handles errors if user inputs to many files. 
 * Handles redirectories >, < 
 * Background process when given '&' at the end of the command
-* Allows for vertical piping, which ceats a child and within creates a grandchild to pipe the command to the other
+* Allows for vertical piping, which creates a child and within creates a grandchild to pipe the command to the other
 * Past ten history. Able to use !! to get previus command or !#(!1,!2, !3..) to get a specfic previous command. Able to change to N amount of history since I used a struct and created an array of structs. The logic was able to easily grab N amount of history. but programmed to 10 for specification of project
 * !$ is replaced with the last word used in the previous command
 
